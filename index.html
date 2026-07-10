@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TradersMate</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Star Citizen Trading</p>
+        <h1>TradersMate</h1>
+      </div>
+      <div class="risk-switch" aria-label="Risiko-Stufe">
+        <button type="button" class="risk-button is-active" data-risk="low">Low</button>
+        <button type="button" class="risk-button" data-risk="medium">Medium</button>
+        <button type="button" class="risk-button" data-risk="high">High</button>
+      </div>
+    </section>
+
+    <section class="control-panel">
+      <label>
+        <span>Startstation</span>
+        <select id="stationSelect">
+          <option value="">Station waehlen</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Material</span>
+        <select id="materialSelect">
+          <option value="">Material waehlen</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="summary" id="summary">
+      Waehle eine Startstation und ein Material.
+    </section>
+
+    <section class="results-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Verkaufsstelle</th>
+            <th>System</th>
+            <th>Du kaufst</th>
+            <th>Station zahlt</th>
+            <th>Gewinn / SCU</th>
+            <th>Marge</th>
+            <th>Hinweise</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody">
+          <tr>
+            <td colspan="7" class="empty">Noch keine Route gewaehlt.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
