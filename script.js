@@ -65,7 +65,12 @@ function terminalLabel(terminal) {
 
   if (/^Admin /i.test(cleanedName)) {
     const location = (station || cleanedName.replace(/^Admin /i, '')).replace(/\s*\([^)]*\)\s*$/, '');
-    return system ? `Admin ${location} - ${system}` : `Admin ${location}`;
+    return system ? `${location} - Admin - ${system}` : `${location} - Admin`;
+  }
+
+  if (/^Platinum Bay/i.test(cleanedName)) {
+    const location = (station || cleanedName.replace(/^Platinum Bay\s*-?\s*/i, '')).replace(/\s*\([^)]*\)\s*$/, '');
+    return system ? `${location} - Platinum Bay - ${system}` : `${location} - Platinum Bay`;
   }
 
   return system ? `${cleanedName} - ${system}` : cleanedName;
