@@ -281,8 +281,7 @@ function renderShopping() {
         .join(' ')
         .toLowerCase()
         .includes(query);
-    })
-    .slice(0, 200);
+    });
 
   summary.textContent = `${matches.length} Shopping-Items angezeigt.`;
   if (!matches.length) {
