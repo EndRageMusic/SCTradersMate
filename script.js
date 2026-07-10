@@ -326,14 +326,24 @@ function renderShopping() {
         .slice(0, 6)
         .map((shop) => `<span>${escapeHtml(shoppingShopLabel(shop.terminal))} - ${formatCredits(shop.price)}</span>`)
         .join('');
-      const extra = shops.length > 6 ? `<span>+${shops.length - 6} weitere</span>` : '';
+      const hiddenShopHtml = shops
+        .slice(6)
+        .map(
+          (shop) =>
+            `<span class="extra-shop is-hidden">${escapeHtml(shoppingShopLabel(shop.terminal))} - ${formatCredits(shop.price)}</span>`,
+        )
+        .join('');
+      const extra =
+        shops.length > 6
+          ? `<button type="button" class="more-shops-button" data-more-shops>+${shops.length - 6} weitere</button>`
+          : '';
 
       return `
         <tr>
           <td><strong>${escapeHtml(item.name)}</strong></td>
           <td>${escapeHtml(item.section || '-')}</td>
           <td>${escapeHtml(item.category || '-')}</td>
-          <td><div class="shop-list">${shopHtml}${extra}</div></td>
+          <td><div class="shop-list">${shopHtml}${hiddenShopHtml}${extra}</div></td>
         </tr>
       `;
     })
@@ -456,6 +466,16 @@ stationSelect.addEventListener('change', () => {
 materialSelect.addEventListener('change', renderRoutes);
 shoppingSearch.addEventListener('input', renderShopping);
 shoppingCategory.addEventListener('change', renderShopping);
+shoppingBody.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-more-shops]');
+  if (!button) {
+    return;
+  }
+
+  const shopList = button.closest('.shop-list');
+  shopList.querySelectorAll('.extra-shop').forEach((shop) => shop.classList.remove('is-hidden'));
+  button.remove();
+});
 modeReset.addEventListener('click', showModeGate);
 
 modeButtons.forEach((button) => {

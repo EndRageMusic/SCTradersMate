@@ -259,6 +259,22 @@ td:nth-child(n+3):nth-child(-n+6) {
   color: var(--muted);
 }
 
+.more-shops-button {
+  width: fit-content;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  color: var(--accent);
+  padding: 0.25rem 0.5rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.more-shops-button:hover,
+.more-shops-button:focus-visible {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
 .empty {
   text-align: center;
   color: var(--muted);
