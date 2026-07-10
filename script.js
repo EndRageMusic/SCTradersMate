@@ -267,6 +267,29 @@ function shoppingCategoryOptions() {
     }));
 }
 
+function shoppingShopLabel(terminalName) {
+  const name = String(terminalName || '').trim();
+  const locations = [
+    'Area 18',
+    'New Babbage',
+    'Orison',
+    'Lorville',
+    'Grim HEX',
+    'Levski',
+    'Port Tressler',
+    'Everus Harbor',
+    'Baijini Point',
+    'Seraphim Station',
+  ];
+  const location = locations.find((item) => name.toLowerCase().endsWith(item.toLowerCase()));
+  if (!location) {
+    return name;
+  }
+
+  const shop = name.slice(0, -location.length).trim().replace(/\s+-\s+$/, '').trim();
+  return shop ? `${shop} - ${location}` : location;
+}
+
 function renderShopping() {
   const query = shoppingSearch.value.trim().toLowerCase();
   const category = shoppingCategory.value;
@@ -301,7 +324,7 @@ function renderShopping() {
         .sort((a, b) => a.price - b.price || a.terminal.localeCompare(b.terminal, 'de'));
       const shopHtml = shops
         .slice(0, 6)
-        .map((shop) => `<span>${escapeHtml(shop.terminal)} - ${formatCredits(shop.price)}</span>`)
+        .map((shop) => `<span>${escapeHtml(shoppingShopLabel(shop.terminal))} - ${formatCredits(shop.price)}</span>`)
         .join('');
       const extra = shops.length > 6 ? `<span>+${shops.length - 6} weitere</span>` : '';
 
