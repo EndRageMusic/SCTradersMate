@@ -2,6 +2,7 @@ const data = window.TRADERSMATE_DATA || { commodities: [], terminals: [], prices
 
 const stationSelect = document.getElementById('stationSelect');
 const materialSelect = document.getElementById('materialSelect');
+const autoLoadCostInput = document.getElementById('autoLoadCostInput');
 const summary = document.getElementById('summary');
 const resultsBody = document.getElementById('resultsBody');
 const riskButtons = [...document.querySelectorAll('[data-risk]')];
@@ -143,6 +144,11 @@ function getSelectedPrice() {
   return pricesByTerminalMaterial.get(`${stationId}:${commodityId}`) || null;
 }
 
+function getAutoLoadCostPerScu() {
+  const value = Number(autoLoadCostInput.value);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
 function allTerminalOptions() {
   return data.terminals
     .filter((terminal) => terminalHasSellGoods(terminal.id))
@@ -223,6 +229,7 @@ function terminalArea(terminal) {
 }
 
 function buildBuyerRows(startPrice, commodityId, startTerminalId) {
+  const autoLoadCost = getAutoLoadCostPerScu();
   return data.prices
     .filter((price) => price.commodityId === commodityId)
     .filter((price) => price.terminalId !== startTerminalId)
@@ -231,13 +238,15 @@ function buildBuyerRows(startPrice, commodityId, startTerminalId) {
       const terminal = terminalsById.get(price.terminalId);
       const sellPrice = Number(price.priceSell);
       const buyPrice = Number(startPrice.priceBuy);
-      const profitPerScu = sellPrice - buyPrice;
-      const margin = buyPrice > 0 ? (profitPerScu / buyPrice) * 100 : 0;
+      const totalCost = buyPrice + autoLoadCost;
+      const profitPerScu = sellPrice - totalCost;
+      const margin = totalCost > 0 ? (profitPerScu / totalCost) * 100 : 0;
       return {
         terminal,
         price,
         sellPrice,
         buyPrice,
+        autoLoadCost,
         profitPerScu,
         margin,
       };
@@ -264,6 +273,9 @@ function routeFlags(row, startTerminal) {
   }
   if (row.price.scuSell) {
     flags.push(`${formatNumber(row.price.scuSell)} SCU Nachfrage`);
+  }
+  if (row.autoLoadCost) {
+    flags.push(`${formatCredits(row.autoLoadCost)} Auto-Load / SCU`);
   }
   return flags;
 }
@@ -295,7 +307,9 @@ function renderRoutes() {
   }
 
   const profitable = buyers.filter((row) => row.profitPerScu > 0).length;
-  summary.textContent = `${buyers.length} Verkaufsstellen fuer ${commodityLabel(commodity)} ab ${terminalLabel(startTerminal)} gefunden, davon ${profitable} profitabel.`;
+  const autoLoadCost = getAutoLoadCostPerScu();
+  const costText = autoLoadCost ? ` Auto-Load: ${formatCredits(autoLoadCost)} / SCU abgezogen.` : '';
+  summary.textContent = `${buyers.length} Verkaufsstellen fuer ${commodityLabel(commodity)} ab ${terminalLabel(startTerminal)} gefunden, davon ${profitable} profitabel.${costText}`;
 
   resultsBody.innerHTML = buyers
     .map((row) => {
@@ -330,6 +344,7 @@ stationSelect.addEventListener('change', () => {
   renderRoutes();
 });
 materialSelect.addEventListener('change', renderRoutes);
+autoLoadCostInput.addEventListener('input', renderRoutes);
 
 riskButtons.forEach((button) => {
   button.addEventListener('click', () => {
