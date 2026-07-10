@@ -270,7 +270,7 @@ function shoppingCategoryOptions() {
 function renderShopping() {
   const query = shoppingSearch.value.trim().toLowerCase();
   const category = shoppingCategory.value;
-  const matches = shoppingItems
+  const filteredItems = shoppingItems
     .filter((item) => !category || item.category === category)
     .filter((item) => {
       if (!query) {
@@ -282,10 +282,16 @@ function renderShopping() {
         .toLowerCase()
         .includes(query);
     });
+  const matches = filteredItems.filter((item) => shoppingPricesByItem.has(item.id));
+  const unavailableMatches = filteredItems.length - matches.length;
 
-  summary.textContent = `${matches.length} Shopping-Items angezeigt.`;
+  summary.textContent = `${matches.length} kaufbare Shopping-Items angezeigt.`;
   if (!matches.length) {
-    shoppingBody.innerHTML = '<tr><td colspan="4" class="empty">Keine Items gefunden.</td></tr>';
+    const text = unavailableMatches
+      ? 'Gefundene Items stehen aktuell nicht zum Verkauf.'
+      : 'Keine Items gefunden.';
+    shoppingBody.innerHTML = `<tr><td colspan="4" class="empty">${escapeHtml(text)}</td></tr>`;
+    summary.textContent = text;
     return;
   }
 
@@ -293,12 +299,10 @@ function renderShopping() {
     .map((item) => {
       const shops = (shoppingPricesByItem.get(item.id) || [])
         .sort((a, b) => a.price - b.price || a.terminal.localeCompare(b.terminal, 'de'));
-      const shopHtml = shops.length
-        ? shops
-            .slice(0, 6)
-            .map((shop) => `<span>${escapeHtml(shop.terminal)} - ${formatCredits(shop.price)}</span>`)
-            .join('')
-        : '<span>Keine Shops gefunden</span>';
+      const shopHtml = shops
+        .slice(0, 6)
+        .map((shop) => `<span>${escapeHtml(shop.terminal)} - ${formatCredits(shop.price)}</span>`)
+        .join('');
       const extra = shops.length > 6 ? `<span>+${shops.length - 6} weitere</span>` : '';
 
       return `
