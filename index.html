@@ -8,19 +8,29 @@
 </head>
 <body>
   <main class="app-shell">
+    <section class="mode-gate" id="modeGate">
+      <p class="eyebrow">Star Citizen</p>
+      <h1>TradersMate</h1>
+      <div class="mode-actions">
+        <button type="button" class="mode-button" data-mode="trading">Trading</button>
+        <button type="button" class="mode-button" data-mode="shopping">Shopping</button>
+      </div>
+    </section>
+
     <section class="hero">
       <div>
-        <p class="eyebrow">Star Citizen Trading</p>
+        <p class="eyebrow" id="modeEyebrow">Star Citizen Trading</p>
         <h1>TradersMate</h1>
       </div>
-      <div class="risk-switch" aria-label="Risiko-Stufe">
+      <button type="button" class="mode-reset" id="modeReset">Wechseln</button>
+      <div class="risk-switch" id="riskSwitch" aria-label="Risiko-Stufe">
         <button type="button" class="risk-button is-active" data-risk="low">Low</button>
         <button type="button" class="risk-button" data-risk="medium">Medium</button>
         <button type="button" class="risk-button" data-risk="high">High</button>
       </div>
     </section>
 
-    <section class="control-panel">
+    <section class="control-panel" id="tradingControls">
       <label>
         <span>Startstation</span>
         <select id="stationSelect">
@@ -36,11 +46,25 @@
       </label>
     </section>
 
+    <section class="control-panel is-hidden" id="shoppingControls">
+      <label>
+        <span>Item suchen</span>
+        <input id="shoppingSearch" type="search" placeholder="Name, Kategorie oder Hersteller">
+      </label>
+
+      <label>
+        <span>Kategorie</span>
+        <select id="shoppingCategory">
+          <option value="">Alle Kategorien</option>
+        </select>
+      </label>
+    </section>
+
     <section class="summary" id="summary">
       Waehle eine Startstation und ein Material.
     </section>
 
-    <section class="results-wrap">
+    <section class="results-wrap" id="tradingResults">
       <table>
         <thead>
           <tr>
@@ -60,9 +84,28 @@
         </tbody>
       </table>
     </section>
+
+    <section class="results-wrap is-hidden" id="shoppingResults">
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Bereich</th>
+            <th>Kategorie</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="shoppingBody">
+          <tr>
+            <td colspan="4" class="empty">Noch keine Suche.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
   </main>
 
   <script src="data.js"></script>
+  <script src="shopping-items.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

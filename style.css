@@ -28,12 +28,63 @@ body {
   padding: 2rem 0;
 }
 
+.mode-gate,
 .hero,
 .control-panel,
 .summary,
 .results-wrap {
   border: 1px solid var(--line);
   background: var(--panel);
+}
+
+.mode-gate {
+  min-height: calc(100vh - 4rem);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1.25rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.mode-gate:not(.is-hidden) ~ .hero,
+.mode-gate:not(.is-hidden) ~ .control-panel,
+.mode-gate:not(.is-hidden) ~ .summary,
+.mode-gate:not(.is-hidden) ~ .results-wrap {
+  display: none;
+}
+
+.mode-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(10rem, 1fr));
+  gap: 1rem;
+  width: min(28rem, 100%);
+}
+
+.mode-button,
+.mode-reset {
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mode-button {
+  min-height: 4rem;
+  font-size: 1.1rem;
+}
+
+.mode-button:hover,
+.mode-button:focus-visible,
+.mode-reset:hover,
+.mode-reset:focus-visible {
+  border-color: var(--accent);
+}
+
+.mode-reset {
+  height: 2.25rem;
+  padding: 0 0.75rem;
 }
 
 .hero {
@@ -118,7 +169,17 @@ select {
   padding: 0 0.65rem;
 }
 
-select:focus {
+input {
+  width: 100%;
+  height: 2.5rem;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  color: var(--text);
+  padding: 0 0.65rem;
+}
+
+select:focus,
+input:focus {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -195,9 +256,14 @@ td:nth-child(n+3):nth-child(-n+6) {
   padding: 2rem;
 }
 
+.is-hidden {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .hero,
-  .control-panel {
+  .control-panel,
+  .mode-actions {
     grid-template-columns: 1fr;
   }
 

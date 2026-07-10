@@ -1,11 +1,25 @@
 const data = window.TRADERSMATE_DATA || { commodities: [], terminals: [], prices: [] };
+const shoppingItems = window.TRADERSMATE_SHOPPING_ITEMS || [];
 
+const modeGate = document.getElementById('modeGate');
+const modeButtons = [...document.querySelectorAll('[data-mode]')];
+const modeReset = document.getElementById('modeReset');
+const modeEyebrow = document.getElementById('modeEyebrow');
+const riskSwitch = document.getElementById('riskSwitch');
+const tradingControls = document.getElementById('tradingControls');
+const tradingResults = document.getElementById('tradingResults');
+const shoppingControls = document.getElementById('shoppingControls');
+const shoppingResults = document.getElementById('shoppingResults');
+const shoppingSearch = document.getElementById('shoppingSearch');
+const shoppingCategory = document.getElementById('shoppingCategory');
+const shoppingBody = document.getElementById('shoppingBody');
 const stationSelect = document.getElementById('stationSelect');
 const materialSelect = document.getElementById('materialSelect');
 const summary = document.getElementById('summary');
 const resultsBody = document.getElementById('resultsBody');
 const riskButtons = [...document.querySelectorAll('[data-risk]')];
 let activeRisk = 'low';
+let activeMode = '';
 
 const riskLabels = {
   low: 'Low',
@@ -95,6 +109,31 @@ function fillSelect(select, options, placeholder) {
   if (options.some((item) => item.value === current)) {
     select.value = current;
   }
+}
+
+function showMode(mode) {
+  activeMode = mode;
+  modeGate.classList.add('is-hidden');
+  const isTrading = mode === 'trading';
+
+  modeEyebrow.textContent = isTrading ? 'Star Citizen Trading' : 'Star Citizen Shopping';
+  riskSwitch.classList.toggle('is-hidden', !isTrading);
+  tradingControls.classList.toggle('is-hidden', !isTrading);
+  tradingResults.classList.toggle('is-hidden', !isTrading);
+  shoppingControls.classList.toggle('is-hidden', isTrading);
+  shoppingResults.classList.toggle('is-hidden', isTrading);
+
+  if (isTrading) {
+    renderRoutes();
+  } else {
+    renderShopping();
+  }
+}
+
+function showModeGate() {
+  activeMode = '';
+  modeGate.classList.remove('is-hidden');
+  summary.textContent = 'Waehle Trading oder Shopping.';
 }
 
 function formatNumber(value) {
@@ -211,6 +250,52 @@ function renderEmpty(text) {
   summary.textContent = text;
 }
 
+function shoppingCategoryOptions() {
+  return [...new Set(shoppingItems.map((item) => item.category).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'de'))
+    .map((category) => ({
+      value: category,
+      label: category,
+    }));
+}
+
+function renderShopping() {
+  const query = shoppingSearch.value.trim().toLowerCase();
+  const category = shoppingCategory.value;
+  const matches = shoppingItems
+    .filter((item) => !category || item.category === category)
+    .filter((item) => {
+      if (!query) {
+        return true;
+      }
+      return [item.name, item.section, item.category, item.details]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
+    })
+    .slice(0, 200);
+
+  summary.textContent = `${matches.length} Shopping-Items angezeigt.`;
+  if (!matches.length) {
+    shoppingBody.innerHTML = '<tr><td colspan="4" class="empty">Keine Items gefunden.</td></tr>';
+    return;
+  }
+
+  shoppingBody.innerHTML = matches
+    .map(
+      (item) => `
+        <tr>
+          <td><strong>${escapeHtml(item.name)}</strong></td>
+          <td>${escapeHtml(item.section || '-')}</td>
+          <td>${escapeHtml(item.category || '-')}</td>
+          <td>${escapeHtml(item.details || '-')}</td>
+        </tr>
+      `,
+    )
+    .join('');
+}
+
 function terminalArea(terminal) {
   return [terminal.station, terminal.city, terminal.outpost, terminal.planet]
     .filter(Boolean)
@@ -325,6 +410,13 @@ stationSelect.addEventListener('change', () => {
   renderRoutes();
 });
 materialSelect.addEventListener('change', renderRoutes);
+shoppingSearch.addEventListener('input', renderShopping);
+shoppingCategory.addEventListener('change', renderShopping);
+modeReset.addEventListener('click', showModeGate);
+
+modeButtons.forEach((button) => {
+  button.addEventListener('click', () => showMode(button.dataset.mode));
+});
 
 riskButtons.forEach((button) => {
   button.addEventListener('click', () => {
@@ -336,4 +428,5 @@ riskButtons.forEach((button) => {
 });
 
 refreshOptions();
-renderRoutes();
+fillSelect(shoppingCategory, shoppingCategoryOptions(), 'Alle Kategorien');
+showModeGate();
