@@ -1,5 +1,6 @@
 const data = window.TRADERSMATE_DATA || { commodities: [], terminals: [], prices: [] };
 const shoppingItems = window.TRADERSMATE_SHOPPING_ITEMS || [];
+const shoppingPrices = window.TRADERSMATE_SHOPPING_PRICES || [];
 
 const modeGate = document.getElementById('modeGate');
 const modeButtons = [...document.querySelectorAll('[data-mode]')];
@@ -30,9 +31,16 @@ const riskLabels = {
 const commoditiesById = new Map(data.commodities.map((commodity) => [commodity.id, commodity]));
 const terminalsById = new Map(data.terminals.map((terminal) => [terminal.id, terminal]));
 const pricesByTerminalMaterial = new Map();
+const shoppingPricesByItem = new Map();
 
 data.prices.forEach((price) => {
   pricesByTerminalMaterial.set(`${price.terminalId}:${price.commodityId}`, price);
+});
+
+shoppingPrices.forEach((price) => {
+  const rows = shoppingPricesByItem.get(price.itemId) || [];
+  rows.push(price);
+  shoppingPricesByItem.set(price.itemId, rows);
 });
 
 function uniqueSorted(values) {
@@ -268,7 +276,7 @@ function renderShopping() {
       if (!query) {
         return true;
       }
-      return [item.name, item.section, item.category, item.details]
+      return [item.name, item.section, item.category]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -283,16 +291,26 @@ function renderShopping() {
   }
 
   shoppingBody.innerHTML = matches
-    .map(
-      (item) => `
+    .map((item) => {
+      const shops = (shoppingPricesByItem.get(item.id) || [])
+        .sort((a, b) => a.price - b.price || a.terminal.localeCompare(b.terminal, 'de'));
+      const shopHtml = shops.length
+        ? shops
+            .slice(0, 6)
+            .map((shop) => `<span>${escapeHtml(shop.terminal)} - ${formatCredits(shop.price)}</span>`)
+            .join('')
+        : '<span>Keine Shops gefunden</span>';
+      const extra = shops.length > 6 ? `<span>+${shops.length - 6} weitere</span>` : '';
+
+      return `
         <tr>
           <td><strong>${escapeHtml(item.name)}</strong></td>
           <td>${escapeHtml(item.section || '-')}</td>
           <td>${escapeHtml(item.category || '-')}</td>
-          <td>${escapeHtml(item.details || '-')}</td>
+          <td><div class="shop-list">${shopHtml}${extra}</div></td>
         </tr>
-      `,
-    )
+      `;
+    })
     .join('');
 }
 

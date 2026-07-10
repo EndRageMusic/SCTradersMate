@@ -250,6 +250,15 @@ td:nth-child(n+3):nth-child(-n+6) {
   color: var(--muted);
 }
 
+.shop-list {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.shop-list span {
+  color: var(--muted);
+}
+
 .empty {
   text-align: center;
   color: var(--muted);
