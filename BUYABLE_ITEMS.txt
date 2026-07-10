@@ -1,0 +1,91 @@
+Kaufbare Items
+Anzahl: 86
+
+Definition: priceBuy > 0 an mindestens einem Terminal.
+
+Agricium (AGRI) - Metal
+Agricultural Supplies (AGRS) - Agricultural
+Altruciatoxin (AUTR) - Drug
+Aluminum (ALUM) - Metal
+Amioshi Plague (AMIP) - Natural
+Ammonia (AMMO) - Raw Materials
+Argon (ARGO) - Gas
+Astatine (ASTA) - Halogen
+Atlasium (ATLA) - Metal
+Audio-Visual Equipment (AUDI) - Temporary
+Beryl (BERY) - Mineral
+Bexalite (BEXA) - Mineral
+Bioplastic (BIOPL) - Man-made
+Carbon (CARB) - Raw Materials
+Carbon-Silk (CSIL) - Natural
+Chlorine (CHLO) - Halogen
+Cobalt (COBA) - Mineral
+Compboard (COMP) - Scrap
+Construction Materials (CMAT) - Scrap
+Copper (COPP) - Metal
+Corundum (CORU) - Mineral
+Degnous Root (DEGR) - Natural
+Detatrine (DETA) - Explosive
+Diamond (DIAM) - Metal
+Diamond Laminate (DIAL) - Man-made
+Distilled Spirits (DIST) - Vice
+Dymantium (DYMA) - Explosive
+DynaFlex (DYNF) - Man-Made
+E'tam (ETAM) - Drug
+Fluorine (FLUO) - Halogen
+Fresh Food (FFOO) - Food
+Gasping Weevil Eggs (GAWE) - Natural
+Gold (GOLD) - Metal
+Golden Medmon (GOLM) - Natural
+Helium (HELI) - Gas
+Hephaestanite (HEPH) - Mineral
+Human Food Bars (HFBA) - Commodity
+Hydrogen (HYDR) - Gas
+Hydrogen Fuel (HYDF) - Fuel
+Inert Materials (INER) - Other
+Iodine (IODI) - Halogen
+Iron (IRON) - Metal
+Laranite (LARA) - Metal
+Medical Supplies (MEDS) - Medical
+Mercury (MERC) - Metal
+Methane (METH) - Gas
+Neon (NEON) - Drug
+Nitrogen (NITR) - Gas
+Omnapoxy (OMPO) - Man-made
+Organics (ORGN) - Organics
+Osoian Hides (OSOH) - Vice
+Partillium (PRTL) - Gas
+Pitambu (PITA) - Food
+Potassium (POTA) - Mineral
+Pressurized Ice (PICE) - Raw Materials
+Processed Food (PFOO) - Food
+Quantum Fuel (QFUE) - Fuel
+Quartz (QUAR) - Metal
+Ranta Dung (RAND) - Agricultural
+Recycled Material Composite (RMC) - Scrap
+Revenant Tree Pollen (REVE) - Vice
+Scrap (SCRA) - Scrap
+Ship Ammunition (SHPA) - Ammunition
+Ship Ammunition - Size 1 (SHPA1) - Ammunition
+Ship Ammunition - Size 2 (SHPA2) - Ammunition
+Ship Ammunition - Size 3 (SHPA3) - Ammunition
+Ship Ammunition - Size 4 (SHPA4) - Ammunition
+Ship Ammunition - Size 5 (SHPA5) - Ammunition
+Ship Ammunition - Size 6 (SHPA6) - Ammunition
+Ship Ammunition - Size 7 (SHPA7) - Ammunition
+Ship Decoy Countermeasures (SHPDC) - Ammunition
+Ship Noise Countermeasures (SHPNC) - Ammunition
+Silicon (SILI) - Raw Materials
+Steel (STEE) - Alloy
+Stileron (STIL) - Mineral
+Stims (STIM) - Vice
+Sunset Berries (SUNB) - Natural
+Taranite (TARA) - Mineral
+Thermalfoam (FOAM) - Man-made
+Tin (TIN) - Metal
+Titanium (TITA) - Metal
+Tritium (TRIT) - Gas
+Tungsten (TUNG) - Metal
+Waste (WAST) - Waste
+WiDoW (WIDO) - Drug
+Xa'Pyen (XAPY) - Alloy
