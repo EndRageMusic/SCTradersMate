@@ -430,12 +430,17 @@ function subsystemOptions(system) {
     .map((subsystem) => ({ value: subsystem, label: subsystem }));
 }
 
+function isComponentItem(item) {
+  const section = String(item.section || '').toLowerCase();
+  return section === 'systems' || section === 'vehicle weapons';
+}
+
 function isShoppingItemVisible(item) {
   const section = String(item.section || '').toLowerCase();
   if (activeMode === 'components') {
-    return section === 'systems' || section === 'vehicle weapons';
+    return isComponentItem(item);
   }
-  return section !== 'commodities' && section !== 'systems';
+  return section !== 'commodities' && !isComponentItem(item);
 }
 
 function shoppingItemCategory(item) {
