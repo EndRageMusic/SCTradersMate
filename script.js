@@ -14,6 +14,8 @@ const shoppingResults = document.getElementById('shoppingResults');
 const shoppingSearch = document.getElementById('shoppingSearch');
 const shoppingCategory = document.getElementById('shoppingCategory');
 const shoppingBody = document.getElementById('shoppingBody');
+const systemSelect = document.getElementById('systemSelect');
+const subsystemSelect = document.getElementById('subsystemSelect');
 const stationSelect = document.getElementById('stationSelect');
 const materialSelect = document.getElementById('materialSelect');
 const autoLoadCostInput = document.getElementById('autoLoadCostInput');
@@ -58,10 +60,12 @@ function terminalLabel(terminal) {
     .replace(/^Admin - /i, 'Admin ');
 
   if (/^TDD - /i.test(cleanedName)) {
-    return cleanedName
+    const location = (station || cleanedName
       .replace(/^TDD - /i, 'TDD - ')
       .replace(/^TDD - (Cloudview Center - )?/i, 'TDD - ')
-      .replace(/^TDD - (Commons - )?/i, 'TDD - ');
+      .replace(/^TDD - (Commons - )?/i, 'TDD - ')
+      .replace(/^TDD - /i, '')).replace(/\s*\([^)]*\)\s*$/, '');
+    return location ? `${location} - TDD` : 'TDD';
   }
 
   if (/^Admin /i.test(cleanedName)) {
@@ -197,9 +201,13 @@ function getAutoLoadCostPerScu() {
 }
 
 function allTerminalOptions() {
+  const selectedSystem = systemSelect.value;
+  const selectedSubsystem = subsystemSelect.value;
   return data.terminals
     .filter((terminal) => terminalHasSellGoods(terminal.id))
     .filter((terminal) => !isMiningFacility(terminal))
+    .filter((terminal) => terminal.system === selectedSystem)
+    .filter((terminal) => terminalSubsystem(terminal) === selectedSubsystem)
     .map((terminal) => ({
       value: String(terminal.id),
       label: terminalLabel(terminal),
@@ -253,7 +261,22 @@ function isMiningFacility(terminal) {
 }
 
 function refreshOptions() {
-  fillSelect(stationSelect, uniqueSorted(allTerminalOptions()), 'Station waehlen');
+  fillSelect(systemSelect, systemOptions(), 'System waehlen');
+  const selectedSystem = systemSelect.value;
+  fillSelect(
+    subsystemSelect,
+    selectedSystem ? subsystemOptions(selectedSystem) : [],
+    selectedSystem ? 'Untersystem waehlen' : 'Erst System waehlen',
+  );
+  subsystemSelect.disabled = !selectedSystem;
+
+  const selectedSubsystem = subsystemSelect.value;
+  fillSelect(
+    stationSelect,
+    selectedSystem && selectedSubsystem ? uniqueSorted(allTerminalOptions()) : [],
+    selectedSubsystem ? 'Station waehlen' : 'Erst Untersystem waehlen',
+  );
+  stationSelect.disabled = !selectedSystem || !selectedSubsystem;
   const stationId = Number(stationSelect.value);
   const materialOptions = stationId ? commodityOptionsForStation(stationId) : [];
   const placeholder = stationId
@@ -270,12 +293,46 @@ function renderEmpty(text) {
 }
 
 function shoppingCategoryOptions() {
-  return [...new Set(shoppingItems.map((item) => item.category).filter(Boolean))]
+  return [...new Set(shoppingItems.filter(isShoppingItemVisible).map((item) => item.category).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'de'))
     .map((category) => ({
       value: category,
       label: category,
     }));
+}
+
+function systemOptions() {
+  const availableSystems = new Set(
+    data.terminals
+      .filter((terminal) => terminalHasSellGoods(terminal.id))
+      .filter((terminal) => !isMiningFacility(terminal))
+      .map((terminal) => terminal.system)
+      .filter(Boolean),
+  );
+
+  return ['Stanton', 'Nyx', 'Pyro']
+    .filter((system) => availableSystems.has(system))
+    .map((system) => ({ value: system, label: system }));
+}
+
+function terminalSubsystem(terminal) {
+  return terminal.planet || 'Stationen & Gateways';
+}
+
+function subsystemOptions(system) {
+  return [...new Set(
+    data.terminals
+      .filter((terminal) => terminal.system === system)
+      .filter((terminal) => terminalHasSellGoods(terminal.id))
+      .filter((terminal) => !isMiningFacility(terminal))
+      .map(terminalSubsystem),
+  )]
+    .sort((a, b) => a.localeCompare(b, 'de'))
+    .map((subsystem) => ({ value: subsystem, label: subsystem }));
+}
+
+function isShoppingItemVisible(item) {
+  return String(item.section || '').toLowerCase() !== 'commodities';
 }
 
 function shoppingShopLabel(terminalName) {
@@ -305,6 +362,7 @@ function renderShopping() {
   const query = shoppingSearch.value.trim().toLowerCase();
   const category = shoppingCategory.value;
   const filteredItems = shoppingItems
+    .filter(isShoppingItemVisible)
     .filter((item) => !category || item.category === category)
     .filter((item) => {
       if (!query) {
@@ -479,6 +537,19 @@ function renderRoutes() {
 }
 
 stationSelect.addEventListener('change', () => {
+  refreshOptions();
+  renderRoutes();
+});
+systemSelect.addEventListener('change', () => {
+  subsystemSelect.value = '';
+  stationSelect.value = '';
+  materialSelect.value = '';
+  refreshOptions();
+  renderRoutes();
+});
+subsystemSelect.addEventListener('change', () => {
+  stationSelect.value = '';
+  materialSelect.value = '';
   refreshOptions();
   renderRoutes();
 });

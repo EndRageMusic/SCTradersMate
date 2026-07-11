@@ -148,7 +148,7 @@ h1 {
 
 .control-panel {
   display: grid;
-  grid-template-columns: repeat(3, minmax(13rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: 1rem;
   margin-top: 1rem;
   padding: 1rem;

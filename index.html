@@ -32,9 +32,23 @@
 
     <section class="control-panel" id="tradingControls">
       <label>
+        <span>System</span>
+        <select id="systemSelect">
+          <option value="">System waehlen</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Untersystem</span>
+        <select id="subsystemSelect" disabled>
+          <option value="">Erst System waehlen</option>
+        </select>
+      </label>
+
+      <label>
         <span>Startstation</span>
-        <select id="stationSelect">
-          <option value="">Station waehlen</option>
+        <select id="stationSelect" disabled>
+          <option value="">Erst Untersystem waehlen</option>
         </select>
       </label>
 
