@@ -9,7 +9,6 @@ const modeGate = document.getElementById('modeGate');
 const modeButtons = [...document.querySelectorAll('[data-mode]')];
 const modeReset = document.getElementById('modeReset');
 const modeEyebrow = document.getElementById('modeEyebrow');
-const riskSwitch = document.getElementById('riskSwitch');
 const tradingControls = document.getElementById('tradingControls');
 const tradingResults = document.getElementById('tradingResults');
 const shoppingControls = document.getElementById('shoppingControls');
@@ -34,15 +33,7 @@ const materialSelect = document.getElementById('materialSelect');
 const autoLoadCostInput = document.getElementById('autoLoadCostInput');
 const summary = document.getElementById('summary');
 const resultsBody = document.getElementById('resultsBody');
-const riskButtons = [...document.querySelectorAll('[data-risk]')];
-let activeRisk = 'low';
 let activeMode = '';
-
-const riskLabels = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-};
 
 const commoditiesById = new Map(data.commodities.map((commodity) => [commodity.id, commodity]));
 const terminalsById = new Map(data.terminals.map((terminal) => [terminal.id, terminal]));
@@ -98,36 +89,6 @@ function commodityLabel(commodity) {
   return commodity.code ? `${commodity.name} (${commodity.code})` : commodity.name;
 }
 
-function commodityRisk(commodity) {
-  const name = commodity.name.toLowerCase();
-  const kind = String(commodity.kind || '').toLowerCase();
-
-  if (
-    commodity.isIllegal ||
-    /drug|vice|temporary/.test(kind) ||
-    /maze|neon|etam|altruciatoxin|osoian|hadanite|dolivine|aphorite|janalite|quantainium|feynmaline|beradom|glacosite|luminalia|year of/.test(
-      name,
-    )
-  ) {
-    return 'high';
-  }
-
-  if (
-    /metal|mineral|explosive|medical|man-made|man-made|raw materials|chemical|electronics|crafting/.test(kind) ||
-    /gold|diamond|laranite|agricium|bexalite|taranite|titanium|tungsten|mercury|dyna|astatine|iodine|recycled material composite/.test(
-      name,
-    )
-  ) {
-    return 'medium';
-  }
-
-  return 'low';
-}
-
-function commodityMatchesRisk(commodity) {
-  return commodityRisk(commodity) === activeRisk;
-}
-
 function fillSelect(select, options, placeholder) {
   const current = select.value;
   select.innerHTML = `<option value="">${placeholder}</option>`;
@@ -159,7 +120,6 @@ function showMode(mode) {
         : isGroundVehicles
           ? 'Star Citizen Bodenfahrzeuge'
           : 'Star Citizen Shopping';
-  riskSwitch.classList.toggle('is-hidden', !isTrading);
   tradingControls.classList.toggle('is-hidden', !isTrading);
   tradingResults.classList.toggle('is-hidden', !isTrading);
   shoppingControls.classList.toggle('is-hidden', isTrading || isShips || isGroundVehicles);
@@ -250,15 +210,6 @@ function allTerminalOptions() {
     }));
 }
 
-function allCommodityOptions() {
-  return data.commodities
-    .filter(commodityMatchesRisk)
-    .map((commodity) => ({
-      value: String(commodity.id),
-      label: commodityLabel(commodity),
-    }));
-}
-
 function commodityOptionsForStation(stationId) {
   const commodityIds = new Set(
     data.prices
@@ -269,7 +220,6 @@ function commodityOptionsForStation(stationId) {
 
   return data.commodities
     .filter((commodity) => commodityIds.has(commodity.id))
-    .filter(commodityMatchesRisk)
     .map((commodity) => ({
       value: String(commodity.id),
       label: commodityLabel(commodity),
@@ -316,7 +266,7 @@ function refreshOptions() {
   const stationId = Number(stationSelect.value);
   const materialOptions = stationId ? commodityOptionsForStation(stationId) : [];
   const placeholder = stationId
-    ? `${riskLabels[activeRisk]} Material waehlen`
+    ? 'Material waehlen'
     : 'Erst Startstation waehlen';
 
   fillSelect(materialSelect, uniqueSorted(materialOptions), placeholder);
@@ -666,7 +616,7 @@ function renderRoutes() {
 
   if (!startTerminalId || !commodityId) {
     renderEmpty(
-      `${data.terminals.length} Terminals und ${data.commodities.length} Waren geladen. Risiko ${riskLabels[activeRisk]}: Waehle Startstation und Material.`,
+      `${data.terminals.length} Terminals und ${data.commodities.length} Waren geladen. Waehle Startstation und Material.`,
     );
     return;
   }
@@ -778,15 +728,6 @@ modeReset.addEventListener('click', showModeGate);
 
 modeButtons.forEach((button) => {
   button.addEventListener('click', () => showMode(button.dataset.mode));
-});
-
-riskButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    activeRisk = button.dataset.risk;
-    riskButtons.forEach((item) => item.classList.toggle('is-active', item === button));
-    refreshOptions();
-    renderRoutes();
-  });
 });
 
 refreshOptions();
