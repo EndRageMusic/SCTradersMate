@@ -56,9 +56,9 @@ body {
 
 .mode-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(10rem, 1fr));
+  grid-template-columns: repeat(5, minmax(8rem, 1fr));
   gap: 1rem;
-  width: min(28rem, 100%);
+  width: min(54rem, 100%);
 }
 
 .mode-button,
@@ -198,6 +198,18 @@ input:focus {
   overflow: auto;
 }
 
+#shoppingResults:not(.is-components-view) th:nth-child(4),
+#shoppingResults:not(.is-components-view) th:nth-child(5),
+#shoppingResults:not(.is-components-view) td:nth-child(4),
+#shoppingResults:not(.is-components-view) td:nth-child(5) {
+  display: none;
+}
+
+#shipResults .shop-list,
+#groundVehicleResults .shop-list {
+  min-width: 18rem;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -318,21 +330,39 @@ td:nth-child(n+3):nth-child(-n+6) {
   #shoppingResults tbody,
   #shoppingResults tr,
   #shoppingResults th,
-  #shoppingResults td {
+  #shoppingResults td,
+  #shipResults table,
+  #shipResults thead,
+  #shipResults tbody,
+  #shipResults tr,
+  #shipResults th,
+  #shipResults td,
+  #groundVehicleResults table,
+  #groundVehicleResults thead,
+  #groundVehicleResults tbody,
+  #groundVehicleResults tr,
+  #groundVehicleResults th,
+  #groundVehicleResults td {
     display: block;
     width: 100%;
   }
 
-  #shoppingResults thead {
+  #shoppingResults thead,
+  #shipResults thead,
+  #groundVehicleResults thead {
     display: none;
   }
 
-  #shoppingResults tr {
+  #shoppingResults tr,
+  #shipResults tr,
+  #groundVehicleResults tr {
     border-bottom: 1px solid var(--line);
     padding: 0.75rem;
   }
 
-  #shoppingResults td {
+  #shoppingResults td,
+  #shipResults td,
+  #groundVehicleResults td {
     border-bottom: 0;
     padding: 0.25rem 0;
   }
@@ -345,6 +375,39 @@ td:nth-child(n+3):nth-child(-n+6) {
 
   #shoppingResults td:nth-child(3)::before {
     content: 'Kategorie: ';
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  #shoppingResults td:nth-child(4)::before {
+    content: 'Grade: ';
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  #shoppingResults td:nth-child(5)::before {
+    content: 'Class: ';
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  #shipResults td:nth-child(2)::before,
+  #groundVehicleResults td:nth-child(2)::before {
+    content: 'Hersteller: ';
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  #shipResults td:nth-child(3)::before,
+  #groundVehicleResults td:nth-child(3)::before {
+    content: 'Fracht: ';
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  #shipResults td:nth-child(4)::before,
+  #groundVehicleResults td:nth-child(4)::before {
+    content: 'Crew: ';
     color: var(--muted);
     font-weight: 700;
   }

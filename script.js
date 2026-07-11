@@ -1,6 +1,9 @@
 const data = window.TRADERSMATE_DATA || { commodities: [], terminals: [], prices: [] };
 const shoppingItems = window.TRADERSMATE_SHOPPING_ITEMS || [];
+const componentAttributes = window.TRADERSMATE_COMPONENT_ATTRIBUTES || {};
 const shoppingPrices = window.TRADERSMATE_SHOPPING_PRICES || [];
+const ships = window.TRADERSMATE_SHIPS || [];
+const groundVehicles = window.TRADERSMATE_GROUND_VEHICLES || [];
 
 const modeGate = document.getElementById('modeGate');
 const modeButtons = [...document.querySelectorAll('[data-mode]')];
@@ -14,6 +17,16 @@ const shoppingResults = document.getElementById('shoppingResults');
 const shoppingSearch = document.getElementById('shoppingSearch');
 const shoppingCategory = document.getElementById('shoppingCategory');
 const shoppingBody = document.getElementById('shoppingBody');
+const shipControls = document.getElementById('shipControls');
+const shipResults = document.getElementById('shipResults');
+const shipSearch = document.getElementById('shipSearch');
+const shipManufacturer = document.getElementById('shipManufacturer');
+const shipBody = document.getElementById('shipBody');
+const groundVehicleControls = document.getElementById('groundVehicleControls');
+const groundVehicleResults = document.getElementById('groundVehicleResults');
+const groundVehicleSearch = document.getElementById('groundVehicleSearch');
+const groundVehicleManufacturer = document.getElementById('groundVehicleManufacturer');
+const groundVehicleBody = document.getElementById('groundVehicleBody');
 const systemSelect = document.getElementById('systemSelect');
 const subsystemSelect = document.getElementById('subsystemSelect');
 const stationSelect = document.getElementById('stationSelect');
@@ -133,17 +146,40 @@ function showMode(mode) {
   activeMode = mode;
   modeGate.classList.add('is-hidden');
   const isTrading = mode === 'trading';
+  const isComponents = mode === 'components';
+  const isShips = mode === 'ships';
+  const isGroundVehicles = mode === 'groundVehicles';
 
-  modeEyebrow.textContent = isTrading ? 'Star Citizen Trading' : 'Star Citizen Shopping';
+  modeEyebrow.textContent = isTrading
+    ? 'Star Citizen Trading'
+    : isComponents
+      ? 'Star Citizen Komponenten'
+      : isShips
+        ? 'Star Citizen Schiffe'
+        : isGroundVehicles
+          ? 'Star Citizen Bodenfahrzeuge'
+          : 'Star Citizen Shopping';
   riskSwitch.classList.toggle('is-hidden', !isTrading);
   tradingControls.classList.toggle('is-hidden', !isTrading);
   tradingResults.classList.toggle('is-hidden', !isTrading);
-  shoppingControls.classList.toggle('is-hidden', isTrading);
-  shoppingResults.classList.toggle('is-hidden', isTrading);
+  shoppingControls.classList.toggle('is-hidden', isTrading || isShips || isGroundVehicles);
+  shoppingResults.classList.toggle('is-hidden', isTrading || isShips || isGroundVehicles);
+  shoppingResults.classList.toggle('is-components-view', isComponents);
+  shipControls.classList.toggle('is-hidden', !isShips);
+  shipResults.classList.toggle('is-hidden', !isShips);
+  groundVehicleControls.classList.toggle('is-hidden', !isGroundVehicles);
+  groundVehicleResults.classList.toggle('is-hidden', !isGroundVehicles);
 
   if (isTrading) {
     renderRoutes();
+  } else if (isShips) {
+    renderShips();
+  } else if (isGroundVehicles) {
+    renderGroundVehicles();
   } else {
+    shoppingSearch.value = '';
+    shoppingCategory.value = '';
+    fillSelect(shoppingCategory, shoppingCategoryOptions(), 'Alle Kategorien');
     renderShopping();
   }
 }
@@ -151,7 +187,7 @@ function showMode(mode) {
 function showModeGate() {
   activeMode = '';
   modeGate.classList.remove('is-hidden');
-  summary.textContent = 'Waehle Trading oder Shopping.';
+  summary.textContent = 'Waehle Trading, Shopping, Komponenten, Schiffe oder Bodenfahrzeuge.';
 }
 
 function formatNumber(value) {
@@ -293,7 +329,7 @@ function renderEmpty(text) {
 }
 
 function shoppingCategoryOptions() {
-  return [...new Set(shoppingItems.filter(isShoppingItemVisible).map((item) => item.category).filter(Boolean))]
+  return [...new Set(shoppingItems.filter(isShoppingItemVisible).map(shoppingItemCategory).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'de'))
     .map((category) => ({
       value: category,
@@ -332,7 +368,26 @@ function subsystemOptions(system) {
 }
 
 function isShoppingItemVisible(item) {
-  return String(item.section || '').toLowerCase() !== 'commodities';
+  const section = String(item.section || '').toLowerCase();
+  if (activeMode === 'components') {
+    return section === 'systems';
+  }
+  return section !== 'commodities' && section !== 'systems';
+}
+
+function shoppingItemCategory(item) {
+  if (item.category === 'Docking Collars') {
+    return 'Fuel Nozzles';
+  }
+
+  const isWeaponMagazine =
+    String(item.section || '').toLowerCase() === 'personal weapons' &&
+    /\bmagazine\b/i.test(item.name || '');
+  return isWeaponMagazine ? 'Munition' : item.category;
+}
+
+function componentAttribute(item, attribute) {
+  return componentAttributes[item.id]?.[attribute] || '';
 }
 
 function shoppingShopLabel(terminalName) {
@@ -363,12 +418,18 @@ function renderShopping() {
   const category = shoppingCategory.value;
   const filteredItems = shoppingItems
     .filter(isShoppingItemVisible)
-    .filter((item) => !category || item.category === category)
+    .filter((item) => !category || shoppingItemCategory(item) === category)
     .filter((item) => {
       if (!query) {
         return true;
       }
-      return [item.name, item.section, item.category]
+      return [
+        item.name,
+        item.section,
+        shoppingItemCategory(item),
+        componentAttribute(item, 'grade'),
+        componentAttribute(item, 'class'),
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -377,12 +438,13 @@ function renderShopping() {
   const matches = filteredItems.filter((item) => shoppingPricesByItem.has(item.id));
   const unavailableMatches = filteredItems.length - matches.length;
 
-  summary.textContent = `${matches.length} kaufbare Shopping-Items angezeigt.`;
+  const resultName = activeMode === 'components' ? 'Schiffskomponenten' : 'Shopping-Items';
+  summary.textContent = `${matches.length} kaufbare ${resultName} angezeigt.`;
   if (!matches.length) {
     const text = unavailableMatches
       ? 'Gefundene Items stehen aktuell nicht zum Verkauf.'
       : 'Keine Items gefunden.';
-    shoppingBody.innerHTML = `<tr><td colspan="4" class="empty">${escapeHtml(text)}</td></tr>`;
+    shoppingBody.innerHTML = `<tr><td colspan="6" class="empty">${escapeHtml(text)}</td></tr>`;
     summary.textContent = text;
     return;
   }
@@ -411,7 +473,128 @@ function renderShopping() {
         <tr>
           <td><strong>${escapeHtml(item.name)}</strong></td>
           <td>${escapeHtml(item.section || '-')}</td>
-          <td>${escapeHtml(item.category || '-')}</td>
+          <td>${escapeHtml(shoppingItemCategory(item) || '-')}</td>
+          <td>${escapeHtml(componentAttribute(item, 'grade') || '-')}</td>
+          <td>${escapeHtml(componentAttribute(item, 'class') || '-')}</td>
+          <td><div class="shop-list">${shopHtml}${hiddenShopHtml}${extra}</div></td>
+        </tr>
+      `;
+    })
+    .join('');
+}
+
+function shipManufacturerOptions() {
+  return [...new Set(ships.map((ship) => ship.manufacturer).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'de'))
+    .map((manufacturer) => ({ value: manufacturer, label: manufacturer }));
+}
+
+function renderShips() {
+  const query = shipSearch.value.trim().toLowerCase();
+  const manufacturer = shipManufacturer.value;
+  const matches = ships
+    .filter((ship) => !manufacturer || ship.manufacturer === manufacturer)
+    .filter((ship) => {
+      if (!query) {
+        return true;
+      }
+      return [ship.name, ship.manufacturer]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
+    });
+
+  summary.textContent = `${matches.length} ingame kaufbare Schiffe angezeigt.`;
+  if (!matches.length) {
+    shipBody.innerHTML = '<tr><td colspan="5" class="empty">Keine kaufbaren Schiffe gefunden.</td></tr>';
+    return;
+  }
+
+  shipBody.innerHTML = matches
+    .map((ship) => {
+      const shopHtml = ship.shops
+        .slice(0, 3)
+        .map((shop) => `<span>${escapeHtml(shop.terminal)} - ${formatCredits(shop.price)}</span>`)
+        .join('');
+      const hiddenShopHtml = ship.shops
+        .slice(3)
+        .map(
+          (shop) =>
+            `<span class="extra-shop is-hidden">${escapeHtml(shop.terminal)} - ${formatCredits(shop.price)}</span>`,
+        )
+        .join('');
+      const extra =
+        ship.shops.length > 3
+          ? `<button type="button" class="more-shops-button" data-more-shops>+${ship.shops.length - 3} weitere</button>`
+          : '';
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(ship.name)}</strong></td>
+          <td>${escapeHtml(ship.manufacturer || '-')}</td>
+          <td>${ship.scu ? `${formatNumber(ship.scu)} SCU` : '-'}</td>
+          <td>${escapeHtml(ship.crew || '-')}</td>
+          <td><div class="shop-list">${shopHtml}${hiddenShopHtml}${extra}</div></td>
+        </tr>
+      `;
+    })
+    .join('');
+}
+
+function groundVehicleManufacturerOptions() {
+  return [...new Set(groundVehicles.map((vehicle) => vehicle.manufacturer).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'de'))
+    .map((manufacturer) => ({ value: manufacturer, label: manufacturer }));
+}
+
+function renderGroundVehicles() {
+  const query = groundVehicleSearch.value.trim().toLowerCase();
+  const manufacturer = groundVehicleManufacturer.value;
+  const matches = groundVehicles
+    .filter((vehicle) => !manufacturer || vehicle.manufacturer === manufacturer)
+    .filter((vehicle) => {
+      if (!query) {
+        return true;
+      }
+      return [vehicle.name, vehicle.manufacturer]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
+    });
+
+  summary.textContent = `${matches.length} ingame kaufbare Bodenfahrzeuge angezeigt.`;
+  if (!matches.length) {
+    groundVehicleBody.innerHTML =
+      '<tr><td colspan="5" class="empty">Keine kaufbaren Bodenfahrzeuge gefunden.</td></tr>';
+    return;
+  }
+
+  groundVehicleBody.innerHTML = matches
+    .map((vehicle) => {
+      const shopHtml = vehicle.shops
+        .slice(0, 3)
+        .map((shop) => `<span>${escapeHtml(shop.terminal)} - ${formatCredits(shop.price)}</span>`)
+        .join('');
+      const hiddenShopHtml = vehicle.shops
+        .slice(3)
+        .map(
+          (shop) =>
+            `<span class="extra-shop is-hidden">${escapeHtml(shop.terminal)} - ${formatCredits(shop.price)}</span>`,
+        )
+        .join('');
+      const extra =
+        vehicle.shops.length > 3
+          ? `<button type="button" class="more-shops-button" data-more-shops>+${vehicle.shops.length - 3} weitere</button>`
+          : '';
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(vehicle.name)}</strong></td>
+          <td>${escapeHtml(vehicle.manufacturer || '-')}</td>
+          <td>${vehicle.scu ? `${formatNumber(vehicle.scu)} SCU` : '-'}</td>
+          <td>${escapeHtml(vehicle.crew || '-')}</td>
           <td><div class="shop-list">${shopHtml}${hiddenShopHtml}${extra}</div></td>
         </tr>
       `;
@@ -557,7 +740,31 @@ materialSelect.addEventListener('change', renderRoutes);
 autoLoadCostInput.addEventListener('input', renderRoutes);
 shoppingSearch.addEventListener('input', renderShopping);
 shoppingCategory.addEventListener('change', renderShopping);
+shipSearch.addEventListener('input', renderShips);
+shipManufacturer.addEventListener('change', renderShips);
+groundVehicleSearch.addEventListener('input', renderGroundVehicles);
+groundVehicleManufacturer.addEventListener('change', renderGroundVehicles);
 shoppingBody.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-more-shops]');
+  if (!button) {
+    return;
+  }
+
+  const shopList = button.closest('.shop-list');
+  shopList.querySelectorAll('.extra-shop').forEach((shop) => shop.classList.remove('is-hidden'));
+  button.remove();
+});
+shipBody.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-more-shops]');
+  if (!button) {
+    return;
+  }
+
+  const shopList = button.closest('.shop-list');
+  shopList.querySelectorAll('.extra-shop').forEach((shop) => shop.classList.remove('is-hidden'));
+  button.remove();
+});
+groundVehicleBody.addEventListener('click', (event) => {
   const button = event.target.closest('[data-more-shops]');
   if (!button) {
     return;
@@ -584,4 +791,6 @@ riskButtons.forEach((button) => {
 
 refreshOptions();
 fillSelect(shoppingCategory, shoppingCategoryOptions(), 'Alle Kategorien');
+fillSelect(shipManufacturer, shipManufacturerOptions(), 'Alle Hersteller');
+fillSelect(groundVehicleManufacturer, groundVehicleManufacturerOptions(), 'Alle Hersteller');
 showModeGate();

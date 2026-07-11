@@ -14,6 +14,9 @@
       <div class="mode-actions">
         <button type="button" class="mode-button" data-mode="trading">Trading</button>
         <button type="button" class="mode-button" data-mode="shopping">Shopping</button>
+        <button type="button" class="mode-button" data-mode="components">Komponenten</button>
+        <button type="button" class="mode-button" data-mode="ships">Schiffe</button>
+        <button type="button" class="mode-button" data-mode="groundVehicles">Bodenfahrzeuge</button>
       </div>
     </section>
 
@@ -79,6 +82,34 @@
       </label>
     </section>
 
+    <section class="control-panel is-hidden" id="shipControls">
+      <label>
+        <span>Schiff suchen</span>
+        <input id="shipSearch" type="search" placeholder="Schiffsname oder Hersteller">
+      </label>
+
+      <label>
+        <span>Hersteller</span>
+        <select id="shipManufacturer">
+          <option value="">Alle Hersteller</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="control-panel is-hidden" id="groundVehicleControls">
+      <label>
+        <span>Fahrzeug suchen</span>
+        <input id="groundVehicleSearch" type="search" placeholder="Fahrzeugname oder Hersteller">
+      </label>
+
+      <label>
+        <span>Hersteller</span>
+        <select id="groundVehicleManufacturer">
+          <option value="">Alle Hersteller</option>
+        </select>
+      </label>
+    </section>
+
     <section class="summary" id="summary">
       Waehle eine Startstation und ein Material.
     </section>
@@ -111,12 +142,52 @@
             <th>Item</th>
             <th>Bereich</th>
             <th>Kategorie</th>
+            <th>Grade</th>
+            <th>Class</th>
             <th>Shops</th>
           </tr>
         </thead>
         <tbody id="shoppingBody">
           <tr>
-            <td colspan="4" class="empty">Noch keine Suche.</td>
+            <td colspan="6" class="empty">Noch keine Suche.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="results-wrap is-hidden" id="shipResults">
+      <table>
+        <thead>
+          <tr>
+            <th>Schiff</th>
+            <th>Hersteller</th>
+            <th>Fracht</th>
+            <th>Crew</th>
+            <th>Kaufstellen</th>
+          </tr>
+        </thead>
+        <tbody id="shipBody">
+          <tr>
+            <td colspan="5" class="empty">Noch keine Suche.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="results-wrap is-hidden" id="groundVehicleResults">
+      <table>
+        <thead>
+          <tr>
+            <th>Fahrzeug</th>
+            <th>Hersteller</th>
+            <th>Fracht</th>
+            <th>Crew</th>
+            <th>Kaufstellen</th>
+          </tr>
+        </thead>
+        <tbody id="groundVehicleBody">
+          <tr>
+            <td colspan="5" class="empty">Noch keine Suche.</td>
           </tr>
         </tbody>
       </table>
@@ -125,7 +196,10 @@
 
   <script src="data.js"></script>
   <script src="shopping-items.js"></script>
+  <script src="shopping-component-attributes.js"></script>
   <script src="shopping-prices.js"></script>
+  <script src="ships-data.js"></script>
+  <script src="ground-vehicles-data.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
