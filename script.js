@@ -36,10 +36,12 @@ function terminalLabel(terminal) {
     .replace(/^Admin - /i, 'Admin ');
 
   if (/^TDD - /i.test(cleanedName)) {
-    return cleanedName
+    const location = (station || cleanedName
       .replace(/^TDD - /i, 'TDD - ')
       .replace(/^TDD - (Cloudview Center - )?/i, 'TDD - ')
-      .replace(/^TDD - (Commons - )?/i, 'TDD - ');
+      .replace(/^TDD - (Commons - )?/i, 'TDD - ')
+      .replace(/^TDD - /i, '')).replace(/\s*\([^)]*\)\s*$/, '');
+    return location ? `${location} - TDD` : 'TDD';
   }
 
   if (/^Admin /i.test(cleanedName)) {
