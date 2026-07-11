@@ -4,7 +4,7 @@ Kleines eigenstaendiges Web-Tool fuer Star-Citizen-Handelsrouten, Komponenten, A
 
 ## Starten
 
-Oeffne `index.html` direkt im Browser.
+Öffne `index.html` direkt im Browser.
 
 ## Bedienung
 
