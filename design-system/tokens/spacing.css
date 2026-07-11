@@ -1,0 +1,39 @@
+/* ============================================================
+   TradersMate — Spacing & Layout
+   Source used rem steps (0.2/0.35/0.45/0.65/0.75/0.85/1/1.25/2rem).
+   Formalized into a compact px scale. Density leans tight — this is
+   a data terminal, not a marketing page.
+   ============================================================ */
+:root {
+  --space-0: 0;
+  --space-px: 1px;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-10: 20px;
+  --space-12: 24px;
+  --space-14: 28px;
+  --space-16: 32px;
+  --space-20: 40px;
+  --space-24: 48px;
+  --space-32: 64px;
+  --space-40: 80px;
+  --space-48: 96px;
+
+  /* Component sizing */
+  --control-height-sm: 32px;
+  --control-height: 40px;   /* source select/input = 2.5rem */
+  --control-height-lg: 48px;
+  --control-pad-x: 12px;
+
+  /* Layout */
+  --container-max: 1180px;  /* source .app-shell width */
+  --container-gutter: 16px;
+  --panel-pad: 20px;
+  --panel-pad-sm: 12px;
+}
