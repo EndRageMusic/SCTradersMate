@@ -90,8 +90,8 @@
       </label>
 
       <label>
-        <span>Auto-Load Kosten / SCU</span>
-        <input id="autoLoadCostInput" type="number" min="0" step="1" value="0">
+        <span>SCU-Menge</span>
+        <input id="scuMultiplierInput" type="number" min="1" step="1" value="1">
       </label>
     </section>
 
@@ -111,7 +111,7 @@
 
     <section class="trading-metrics" id="tradingMetrics">
       <article class="metric-card metric-card-primary">
-        <span>Bester Gewinn / SCU</span>
+        <span>Bester Gewinn</span>
         <strong id="bestProfitMetric">-</strong>
         <small id="bestProfitTarget">Route wählen</small>
       </article>
@@ -126,7 +126,7 @@
         <small id="profitableCountMetric">0 profitabel</small>
       </article>
       <article class="metric-card">
-        <span>Einkauf / SCU</span>
+        <span>Einkauf</span>
         <strong id="purchasePriceMetric">-</strong>
         <small id="purchaseStationMetric">Startstation wählen</small>
       </article>
@@ -140,8 +140,8 @@
       <dl>
         <div><dt>System</dt><dd id="selectedRouteSystem">-</dd></div>
         <div><dt>Einkauf</dt><dd id="selectedRouteBuy">-</dd></div>
-        <div><dt>Station zahlt</dt><dd id="selectedRouteSell">-</dd></div>
-        <div><dt>Gewinn / SCU</dt><dd id="selectedRouteProfit">-</dd></div>
+        <div><dt>Verkauf</dt><dd id="selectedRouteSell">-</dd></div>
+        <div><dt>Gewinn</dt><dd id="selectedRouteProfit">-</dd></div>
         <div><dt>Marge</dt><dd id="selectedRouteMargin">-</dd></div>
         <div><dt>Hinweise</dt><dd id="selectedRouteFlags">-</dd></div>
       </dl>
@@ -185,9 +185,9 @@
           <tr>
             <th>Verkaufsstelle</th>
             <th>System</th>
-            <th>Du kaufst</th>
-            <th>Station zahlt</th>
-            <th>Gewinn / SCU</th>
+            <th>Einkauf</th>
+            <th>Verkauf</th>
+            <th>Gewinn</th>
             <th>Marge</th>
             <th>Hinweise</th>
           </tr>

@@ -31,7 +31,7 @@ const systemSelect = document.getElementById('systemSelect');
 const subsystemSelect = document.getElementById('subsystemSelect');
 const stationSelect = document.getElementById('stationSelect');
 const materialSelect = document.getElementById('materialSelect');
-const autoLoadCostInput = document.getElementById('autoLoadCostInput');
+const scuMultiplierInput = document.getElementById('scuMultiplierInput');
 const summary = document.getElementById('summary');
 const resultsBody = document.getElementById('resultsBody');
 const tradingMetrics = document.getElementById('tradingMetrics');
@@ -225,9 +225,9 @@ function getSelectedPrice() {
   return pricesByTerminalMaterial.get(`${stationId}:${commodityId}`) || null;
 }
 
-function getAutoLoadCostPerScu() {
-  const value = Number(autoLoadCostInput.value);
-  return Number.isFinite(value) && value > 0 ? value : 0;
+function getScuMultiplier() {
+  const value = Math.floor(Number(scuMultiplierInput.value));
+  return Number.isFinite(value) && value > 0 ? value : 1;
 }
 
 function allTerminalOptions() {
@@ -374,8 +374,8 @@ function selectRoute(index) {
   selectedRouteSystem.textContent = row.terminal.system || '-';
   selectedRouteBuy.textContent = formatCredits(row.buyPrice);
   selectedRouteSell.textContent = formatCredits(row.sellPrice);
-  selectedRouteProfit.textContent = formatSignedCredits(row.profitPerScu);
-  selectedRouteProfit.className = row.profitPerScu > 0 ? 'profit' : row.profitPerScu < 0 ? 'loss' : '';
+  selectedRouteProfit.textContent = formatSignedCredits(row.profitTotal);
+  selectedRouteProfit.className = row.profitTotal > 0 ? 'profit' : row.profitTotal < 0 ? 'loss' : '';
   selectedRouteMargin.textContent = `${formatNumber(row.margin)}%`;
   selectedRouteMargin.className = row.margin > 0 ? 'profit' : row.margin < 0 ? 'loss' : '';
   selectedRouteFlags.textContent = flags.length ? flags.join(' · ') : '-';
@@ -694,25 +694,24 @@ function terminalArea(terminal) {
 }
 
 function buildBuyerRows(startPrice, commodityId, startTerminalId) {
-  const autoLoadCost = getAutoLoadCostPerScu();
+  const scuMultiplier = getScuMultiplier();
   return data.prices
     .filter((price) => price.commodityId === commodityId)
     .filter((price) => price.terminalId !== startTerminalId)
     .filter((price) => Number(price.priceSell) > 0)
     .map((price) => {
       const terminal = terminalsById.get(price.terminalId);
-      const sellPrice = Number(price.priceSell);
-      const buyPrice = Number(startPrice.priceBuy);
-      const totalCost = buyPrice + autoLoadCost;
-      const profitPerScu = sellPrice - totalCost;
-      const margin = totalCost > 0 ? (profitPerScu / totalCost) * 100 : 0;
+      const sellPrice = Number(price.priceSell) * scuMultiplier;
+      const buyPrice = Number(startPrice.priceBuy) * scuMultiplier;
+      const profitTotal = sellPrice - buyPrice;
+      const margin = buyPrice > 0 ? (profitTotal / buyPrice) * 100 : 0;
       return {
         terminal,
         price,
         sellPrice,
         buyPrice,
-        autoLoadCost,
-        profitPerScu,
+        scuMultiplier,
+        profitTotal,
         margin,
       };
     })
@@ -720,7 +719,7 @@ function buildBuyerRows(startPrice, commodityId, startTerminalId) {
     .filter((row) => !isMiningFacility(row.terminal))
     .sort(
       (a, b) =>
-        b.profitPerScu - a.profitPerScu ||
+        b.profitTotal - a.profitTotal ||
         terminalLabel(a.terminal).localeCompare(terminalLabel(b.terminal), 'de'),
     );
 }
@@ -738,9 +737,6 @@ function routeFlags(row, startTerminal) {
   }
   if (row.price.scuSell) {
     flags.push(`${formatNumber(row.price.scuSell)} SCU Nachfrage`);
-  }
-  if (row.autoLoadCost) {
-    flags.push(`${formatCredits(row.autoLoadCost)} Auto-Load / SCU`);
   }
   return flags;
 }
@@ -771,29 +767,28 @@ function renderRoutes() {
     return;
   }
 
-  const profitable = buyers.filter((row) => row.profitPerScu > 0).length;
+  const profitable = buyers.filter((row) => row.profitTotal > 0).length;
   clearSelectedRoute();
   currentBuyerRows = buyers;
   currentStartTerminal = startTerminal;
   const bestProfit = buyers[0];
   const bestMargin = [...buyers].sort((a, b) => b.margin - a.margin)[0];
-  const autoLoadCost = getAutoLoadCostPerScu();
-  const costText = autoLoadCost ? ` Auto-Load: ${formatCredits(autoLoadCost)} / SCU abgezogen.` : '';
-  summary.textContent = `${buyers.length} Verkaufsstellen fuer ${commodityLabel(commodity)} ab ${terminalLabel(startTerminal)} gefunden, davon ${profitable} profitabel.${costText}`;
-  bestProfitMetric.textContent = formatSignedCredits(bestProfit.profitPerScu);
-  bestProfitMetric.className = bestProfit.profitPerScu > 0 ? 'profit' : bestProfit.profitPerScu < 0 ? 'loss' : '';
+  const scuMultiplier = getScuMultiplier();
+  summary.textContent = `${buyers.length} Verkaufsstellen fuer ${formatNumber(scuMultiplier)} SCU ${commodityLabel(commodity)} ab ${terminalLabel(startTerminal)} gefunden, davon ${profitable} profitabel.`;
+  bestProfitMetric.textContent = formatSignedCredits(bestProfit.profitTotal);
+  bestProfitMetric.className = bestProfit.profitTotal > 0 ? 'profit' : bestProfit.profitTotal < 0 ? 'loss' : '';
   bestProfitTarget.textContent = `→ ${terminalLabel(bestProfit.terminal)}`;
   bestMarginMetric.textContent = `${formatNumber(bestMargin.margin)}%`;
   bestMarginMetric.className = bestMargin.margin > 0 ? 'profit' : bestMargin.margin < 0 ? 'loss' : '';
   bestMarginMaterial.textContent = commodityLabel(commodity);
   destinationCountMetric.innerHTML = `${buyers.length} <em>Ziele</em>`;
   profitableCountMetric.textContent = `${profitable} profitabel`;
-  purchasePriceMetric.textContent = formatCredits(Number(startPrice.priceBuy));
-  purchaseStationMetric.textContent = terminalLabel(startTerminal);
+  purchasePriceMetric.textContent = formatCredits(Number(startPrice.priceBuy) * scuMultiplier);
+  purchaseStationMetric.textContent = `${formatNumber(scuMultiplier)} SCU · ${terminalLabel(startTerminal)}`;
 
   resultsBody.innerHTML = buyers
     .map((row, index) => {
-      const profitClass = row.profitPerScu > 0 ? 'profit' : row.profitPerScu < 0 ? 'loss' : '';
+      const profitClass = row.profitTotal > 0 ? 'profit' : row.profitTotal < 0 ? 'loss' : '';
       const marginClass = row.margin > 0 ? 'profit' : row.margin < 0 ? 'loss' : '';
       const area = terminalArea(row.terminal);
       const flags = routeFlags(row, startTerminal);
@@ -807,7 +802,7 @@ function renderRoutes() {
           <td>${escapeHtml(row.terminal.system || '-')}</td>
           <td>${formatCredits(row.buyPrice)}</td>
           <td>${formatCredits(row.sellPrice)}</td>
-          <td class="${profitClass}">${formatSignedCredits(row.profitPerScu)}</td>
+          <td class="${profitClass}">${formatSignedCredits(row.profitTotal)}</td>
           <td class="${marginClass}">${formatNumber(row.margin)}%</td>
           <td>
             <div class="flags">
@@ -856,7 +851,7 @@ subsystemSelect.addEventListener('change', () => {
   renderRoutes();
 });
 materialSelect.addEventListener('change', renderRoutes);
-autoLoadCostInput.addEventListener('input', renderRoutes);
+scuMultiplierInput.addEventListener('input', renderRoutes);
 shoppingSearch.addEventListener('input', renderShopping);
 shoppingCategory.addEventListener('change', renderShopping);
 shipSearch.addEventListener('input', renderShips);
