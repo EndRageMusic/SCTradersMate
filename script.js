@@ -44,6 +44,14 @@ function terminalLabel(terminal) {
     return location ? `${location} - TDD` : 'TDD';
   }
 
+  if (/^MicroTech Planetary Services - Commons - /i.test(cleanedName)) {
+    const location = (station || cleanedName.replace(/^MicroTech Planetary Services - Commons - /i, '')).replace(
+      /\s*\([^)]*\)\s*$/,
+      '',
+    );
+    return location ? `${location} - TDD` : 'New Babbage - TDD';
+  }
+
   if (/^Admin /i.test(cleanedName)) {
     const location = (station || cleanedName.replace(/^Admin /i, '')).replace(/\s*\([^)]*\)\s*$/, '');
     return system ? `${location} - Admin - ${system}` : `${location} - Admin`;
