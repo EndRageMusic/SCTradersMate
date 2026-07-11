@@ -9,8 +9,14 @@
 <body>
   <main class="app-shell">
     <section class="mode-gate" id="modeGate">
-      <p class="eyebrow">Star Citizen</p>
-      <h1>TradersMate</h1>
+      <div class="gate-brand">
+        <span class="gate-glyph">TM</span>
+        <div>
+          <p class="eyebrow">Star Citizen Companion</p>
+          <h1>Traders<span>Mate</span></h1>
+        </div>
+      </div>
+      <p class="gate-lede">Wähle deinen Arbeitsbereich. Preise und Verfügbarkeiten basieren auf dem lokalen UEX-Datensatz.</p>
       <div class="mode-actions">
         <button type="button" class="mode-button" data-mode="trading">Trading</button>
         <button type="button" class="mode-button" data-mode="shopping">Shopping</button>
@@ -18,14 +24,40 @@
         <button type="button" class="mode-button" data-mode="ships">Schiffe</button>
         <button type="button" class="mode-button" data-mode="groundVehicles">Bodenfahrzeuge</button>
       </div>
+      <div class="gate-foot">
+        <span><b id="gateTerminalCount">-</b> Terminals</span>
+        <span><b id="gateCommodityCount">-</b> Waren</span>
+        <span><b id="gateItemCount">-</b> Shop-Items</span>
+      </div>
     </section>
+
+    <header class="app-topbar">
+      <div class="topbar-brand">
+        <span class="brand-mark">TM</span>
+        <strong>Traders<span>Mate</span></strong>
+      </div>
+      <div class="topbar-actions">
+        <div class="api-status"><span class="status-led"></span><b>UEX CORP API 2.0</b><span>· DATENSATZ</span></div>
+        <button type="button" class="mode-reset" id="modeReset">Wechseln</button>
+      </div>
+    </header>
+
+    <nav class="mode-nav" aria-label="Hauptbereiche">
+      <span class="mode-nav-label">Arbeitsbereich</span>
+      <div class="mode-nav-actions">
+        <button type="button" data-mode="trading">Handel</button>
+        <button type="button" data-mode="shopping">Shopping</button>
+        <button type="button" data-mode="components">Komponenten</button>
+        <button type="button" data-mode="ships">Schiffe</button>
+        <button type="button" data-mode="groundVehicles">Bodenfahrzeuge</button>
+      </div>
+    </nav>
 
     <section class="hero">
       <div>
         <p class="eyebrow" id="modeEyebrow">Star Citizen Trading</p>
-        <h1>TradersMate</h1>
+        <h1 id="modeTitle">Handelsrouten</h1>
       </div>
-      <button type="button" class="mode-reset" id="modeReset">Wechseln</button>
     </section>
 
     <section class="control-panel" id="tradingControls">
@@ -75,6 +107,44 @@
           <option value="">Alle Kategorien</option>
         </select>
       </label>
+    </section>
+
+    <section class="trading-metrics" id="tradingMetrics">
+      <article class="metric-card metric-card-primary">
+        <span>Bester Gewinn / SCU</span>
+        <strong id="bestProfitMetric">-</strong>
+        <small id="bestProfitTarget">Route wählen</small>
+      </article>
+      <article class="metric-card">
+        <span>Beste Marge</span>
+        <strong id="bestMarginMetric">-</strong>
+        <small id="bestMarginMaterial">Material wählen</small>
+      </article>
+      <article class="metric-card">
+        <span>Verkaufsstellen</span>
+        <strong id="destinationCountMetric">0 <em>Ziele</em></strong>
+        <small id="profitableCountMetric">0 profitabel</small>
+      </article>
+      <article class="metric-card">
+        <span>Einkauf / SCU</span>
+        <strong id="purchasePriceMetric">-</strong>
+        <small id="purchaseStationMetric">Startstation wählen</small>
+      </article>
+    </section>
+
+    <section class="selected-route is-hidden" id="selectedRoute" aria-live="polite">
+      <div class="selected-route-heading">
+        <span>Ausgewählte Route</span>
+        <strong id="selectedRouteDestination">-</strong>
+      </div>
+      <dl>
+        <div><dt>System</dt><dd id="selectedRouteSystem">-</dd></div>
+        <div><dt>Einkauf</dt><dd id="selectedRouteBuy">-</dd></div>
+        <div><dt>Station zahlt</dt><dd id="selectedRouteSell">-</dd></div>
+        <div><dt>Gewinn / SCU</dt><dd id="selectedRouteProfit">-</dd></div>
+        <div><dt>Marge</dt><dd id="selectedRouteMargin">-</dd></div>
+        <div><dt>Hinweise</dt><dd id="selectedRouteFlags">-</dd></div>
+      </dl>
     </section>
 
     <section class="control-panel is-hidden" id="shipControls">
@@ -187,6 +257,11 @@
         </tbody>
       </table>
     </section>
+
+    <footer class="statusbar">
+      <div><span><b id="statusTerminalCount">-</b> Terminals</span><span><b id="statusCommodityCount">-</b> Waren</span><span><b id="statusItemCount">-</b> Shop-Items</span></div>
+      <div><span>Quelle: <b>UEX Corp API 2.0</b></span><span>Stand: <b id="statusGeneratedAt">-</b></span></div>
+    </footer>
   </main>
 
   <script src="data.js"></script>

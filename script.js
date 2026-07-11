@@ -9,6 +9,7 @@ const modeGate = document.getElementById('modeGate');
 const modeButtons = [...document.querySelectorAll('[data-mode]')];
 const modeReset = document.getElementById('modeReset');
 const modeEyebrow = document.getElementById('modeEyebrow');
+const modeTitle = document.getElementById('modeTitle');
 const tradingControls = document.getElementById('tradingControls');
 const tradingResults = document.getElementById('tradingResults');
 const shoppingControls = document.getElementById('shoppingControls');
@@ -33,7 +34,26 @@ const materialSelect = document.getElementById('materialSelect');
 const autoLoadCostInput = document.getElementById('autoLoadCostInput');
 const summary = document.getElementById('summary');
 const resultsBody = document.getElementById('resultsBody');
+const tradingMetrics = document.getElementById('tradingMetrics');
+const bestProfitMetric = document.getElementById('bestProfitMetric');
+const bestProfitTarget = document.getElementById('bestProfitTarget');
+const bestMarginMetric = document.getElementById('bestMarginMetric');
+const bestMarginMaterial = document.getElementById('bestMarginMaterial');
+const destinationCountMetric = document.getElementById('destinationCountMetric');
+const profitableCountMetric = document.getElementById('profitableCountMetric');
+const purchasePriceMetric = document.getElementById('purchasePriceMetric');
+const purchaseStationMetric = document.getElementById('purchaseStationMetric');
+const selectedRoute = document.getElementById('selectedRoute');
+const selectedRouteDestination = document.getElementById('selectedRouteDestination');
+const selectedRouteSystem = document.getElementById('selectedRouteSystem');
+const selectedRouteBuy = document.getElementById('selectedRouteBuy');
+const selectedRouteSell = document.getElementById('selectedRouteSell');
+const selectedRouteProfit = document.getElementById('selectedRouteProfit');
+const selectedRouteMargin = document.getElementById('selectedRouteMargin');
+const selectedRouteFlags = document.getElementById('selectedRouteFlags');
 let activeMode = '';
+let currentBuyerRows = [];
+let currentStartTerminal = null;
 
 const commoditiesById = new Map(data.commodities.map((commodity) => [commodity.id, commodity]));
 const terminalsById = new Map(data.terminals.map((terminal) => [terminal.id, terminal]));
@@ -120,6 +140,15 @@ function showMode(mode) {
         : isGroundVehicles
           ? 'Star Citizen Bodenfahrzeuge'
           : 'Star Citizen Shopping';
+  modeTitle.textContent = isTrading
+    ? 'Handelsrouten'
+    : isComponents
+      ? 'Schiffskomponenten'
+      : isShips
+        ? 'Schiffe kaufen'
+        : isGroundVehicles
+          ? 'Bodenfahrzeuge'
+          : 'Shopping';
   tradingControls.classList.toggle('is-hidden', !isTrading);
   tradingResults.classList.toggle('is-hidden', !isTrading);
   shoppingControls.classList.toggle('is-hidden', isTrading || isShips || isGroundVehicles);
@@ -129,6 +158,11 @@ function showMode(mode) {
   shipResults.classList.toggle('is-hidden', !isShips);
   groundVehicleControls.classList.toggle('is-hidden', !isGroundVehicles);
   groundVehicleResults.classList.toggle('is-hidden', !isGroundVehicles);
+  tradingMetrics.classList.toggle('is-hidden', !isTrading);
+  selectedRoute.classList.toggle('is-hidden', !isTrading || !selectedRoute.dataset.selected);
+  modeButtons.forEach((button) => {
+    button.classList.toggle('is-active', button.dataset.mode === mode);
+  });
 
   if (isTrading) {
     renderRoutes();
@@ -276,6 +310,77 @@ function refreshOptions() {
 function renderEmpty(text) {
   resultsBody.innerHTML = `<tr><td colspan="7" class="empty">${escapeHtml(text)}</td></tr>`;
   summary.textContent = text;
+  resetTradingMetrics();
+}
+
+function populateDatasetStatus() {
+  const values = {
+    gateTerminalCount: data.terminals.length,
+    statusTerminalCount: data.terminals.length,
+    gateCommodityCount: data.commodities.length,
+    statusCommodityCount: data.commodities.length,
+    gateItemCount: shoppingItems.length,
+    statusItemCount: shoppingItems.length,
+  };
+
+  Object.entries(values).forEach(([id, value]) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.textContent = formatNumber(value);
+    }
+  });
+
+  const generatedAt = document.getElementById('statusGeneratedAt');
+  if (generatedAt) {
+    generatedAt.textContent = String(data.generatedAt || '-').slice(0, 10);
+  }
+}
+
+function resetTradingMetrics() {
+  bestProfitMetric.textContent = '-';
+  bestProfitMetric.className = '';
+  bestProfitTarget.textContent = 'Route wählen';
+  bestMarginMetric.textContent = '-';
+  bestMarginMetric.className = '';
+  bestMarginMaterial.textContent = 'Material wählen';
+  destinationCountMetric.innerHTML = '0 <em>Ziele</em>';
+  profitableCountMetric.textContent = '0 profitabel';
+  purchasePriceMetric.textContent = '-';
+  purchaseStationMetric.textContent = 'Startstation wählen';
+  clearSelectedRoute();
+}
+
+function clearSelectedRoute() {
+  selectedRoute.classList.add('is-hidden');
+  delete selectedRoute.dataset.selected;
+  currentBuyerRows = [];
+  currentStartTerminal = null;
+}
+
+function selectRoute(index) {
+  const row = currentBuyerRows[index];
+  if (!row || !currentStartTerminal) {
+    return;
+  }
+
+  const flags = routeFlags(row, currentStartTerminal);
+  resultsBody.querySelectorAll('[data-route-index]').forEach((tableRow) => {
+    const isSelected = Number(tableRow.dataset.routeIndex) === index;
+    tableRow.classList.toggle('is-selected', isSelected);
+    tableRow.setAttribute('aria-selected', String(isSelected));
+  });
+
+  selectedRouteDestination.textContent = terminalLabel(row.terminal);
+  selectedRouteSystem.textContent = row.terminal.system || '-';
+  selectedRouteBuy.textContent = formatCredits(row.buyPrice);
+  selectedRouteSell.textContent = formatCredits(row.sellPrice);
+  selectedRouteProfit.textContent = formatSignedCredits(row.profitPerScu);
+  selectedRouteProfit.className = row.profitPerScu > 0 ? 'profit' : row.profitPerScu < 0 ? 'loss' : '';
+  selectedRouteMargin.textContent = `${formatNumber(row.margin)}%`;
+  selectedRouteMargin.className = row.margin > 0 ? 'profit' : row.margin < 0 ? 'loss' : '';
+  selectedRouteFlags.textContent = flags.length ? flags.join(' · ') : '-';
+  selectedRoute.dataset.selected = 'true';
+  selectedRoute.classList.remove('is-hidden');
 }
 
 function shoppingCategoryOptions() {
@@ -342,6 +447,16 @@ function componentAttribute(item, attribute) {
 
 function shoppingShopLabel(terminalName) {
   const name = String(terminalName || '').trim();
+  const knownShops = {
+    'centermass area 18': 'CenterMass - IO North Tower - Area 18',
+    "dumper's area 18": "Dumper's Depot - Area 18",
+    "dumper's grimhex": "Dumper's Depot - Grim HEX",
+  };
+  const knownShop = knownShops[name.toLowerCase()];
+  if (knownShop) {
+    return knownShop;
+  }
+
   const locations = [
     'Area 18',
     'New Babbage',
@@ -637,18 +752,34 @@ function renderRoutes() {
   }
 
   const profitable = buyers.filter((row) => row.profitPerScu > 0).length;
+  clearSelectedRoute();
+  currentBuyerRows = buyers;
+  currentStartTerminal = startTerminal;
+  const bestProfit = buyers[0];
+  const bestMargin = [...buyers].sort((a, b) => b.margin - a.margin)[0];
   const autoLoadCost = getAutoLoadCostPerScu();
   const costText = autoLoadCost ? ` Auto-Load: ${formatCredits(autoLoadCost)} / SCU abgezogen.` : '';
   summary.textContent = `${buyers.length} Verkaufsstellen fuer ${commodityLabel(commodity)} ab ${terminalLabel(startTerminal)} gefunden, davon ${profitable} profitabel.${costText}`;
+  bestProfitMetric.textContent = formatSignedCredits(bestProfit.profitPerScu);
+  bestProfitMetric.className = bestProfit.profitPerScu > 0 ? 'profit' : bestProfit.profitPerScu < 0 ? 'loss' : '';
+  bestProfitTarget.textContent = `→ ${terminalLabel(bestProfit.terminal)}`;
+  bestMarginMetric.textContent = `${formatNumber(bestMargin.margin)}%`;
+  bestMarginMetric.className = bestMargin.margin > 0 ? 'profit' : bestMargin.margin < 0 ? 'loss' : '';
+  bestMarginMaterial.textContent = commodityLabel(commodity);
+  destinationCountMetric.innerHTML = `${buyers.length} <em>Ziele</em>`;
+  profitableCountMetric.textContent = `${profitable} profitabel`;
+  purchasePriceMetric.textContent = formatCredits(Number(startPrice.priceBuy));
+  purchaseStationMetric.textContent = terminalLabel(startTerminal);
 
   resultsBody.innerHTML = buyers
-    .map((row) => {
+    .map((row, index) => {
       const profitClass = row.profitPerScu > 0 ? 'profit' : row.profitPerScu < 0 ? 'loss' : '';
+      const marginClass = row.margin > 0 ? 'profit' : row.margin < 0 ? 'loss' : '';
       const area = terminalArea(row.terminal);
       const flags = routeFlags(row, startTerminal);
 
       return `
-        <tr>
+        <tr data-route-index="${index}" tabindex="0" role="button" aria-selected="false">
           <td>
             <strong>${escapeHtml(terminalLabel(row.terminal))}</strong>
             ${area ? `<span class="destination-sub">${escapeHtml(area)}</span>` : ''}
@@ -657,7 +788,7 @@ function renderRoutes() {
           <td>${formatCredits(row.buyPrice)}</td>
           <td>${formatCredits(row.sellPrice)}</td>
           <td class="${profitClass}">${formatSignedCredits(row.profitPerScu)}</td>
-          <td>${formatNumber(row.margin)}%</td>
+          <td class="${marginClass}">${formatNumber(row.margin)}%</td>
           <td>
             <div class="flags">
               ${flags.map((flag) => `<span>${escapeHtml(flag)}</span>`).join('')}
@@ -668,6 +799,24 @@ function renderRoutes() {
     })
     .join('');
 }
+
+resultsBody.addEventListener('click', (event) => {
+  const row = event.target.closest('[data-route-index]');
+  if (row) {
+    selectRoute(Number(row.dataset.routeIndex));
+  }
+});
+
+resultsBody.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return;
+  }
+  const row = event.target.closest('[data-route-index]');
+  if (row) {
+    event.preventDefault();
+    selectRoute(Number(row.dataset.routeIndex));
+  }
+});
 
 stationSelect.addEventListener('change', () => {
   refreshOptions();
@@ -734,4 +883,5 @@ refreshOptions();
 fillSelect(shoppingCategory, shoppingCategoryOptions(), 'Alle Kategorien');
 fillSelect(shipManufacturer, shipManufacturerOptions(), 'Alle Hersteller');
 fillSelect(groundVehicleManufacturer, groundVehicleManufacturerOptions(), 'Alle Hersteller');
+populateDatasetStatus();
 showModeGate();

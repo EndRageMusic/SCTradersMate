@@ -1,0 +1,105 @@
+/* ============================================================
+   TradersMate — Color System
+   Base palette is lifted verbatim from the source style.css
+   (--bg, --panel, --panel-soft, --line, --text, --muted, --accent,
+   --good, .loss) and extended into full tonal scales via OKLCH-harmonic
+   steps. The system is intentionally MONOCHROME-AMBER: one warm accent
+   over a cool blue-gray hull, with green/red reserved for profit/loss.
+   ============================================================ */
+:root {
+  /* ---------- BASE: Neutrals (cool "hull" blue-gray) ---------- */
+  --sc-neutral-950: #0a0d10; /* deepest void / page base */
+  --sc-neutral-900: #101418; /* source --bg */
+  --sc-neutral-850: #13181e;
+  --sc-neutral-800: #171d23; /* source --panel */
+  --sc-neutral-750: #1b222a;
+  --sc-neutral-700: #1f2730; /* source --panel-soft */
+  --sc-neutral-600: #29323d;
+  --sc-neutral-550: #2f3a45;
+  --sc-neutral-500: #34404a; /* source --line */
+  --sc-neutral-400: #47545f;
+  --sc-neutral-300: #667581;
+  --sc-neutral-200: #98a7b5; /* source --muted */
+  --sc-neutral-100: #c3cdd6;
+  --sc-neutral-050: #e7edf2; /* source --text */
+  --sc-neutral-000: #f5f8fb;
+
+  /* ---------- BASE: Amber (primary accent) ---------- */
+  --sc-amber-900: #4f2909;
+  --sc-amber-800: #7a3d0c;
+  --sc-amber-700: #b05913;
+  --sc-amber-600: #d16d1c;
+  --sc-amber-500: #e77e23; /* source --accent */
+  --sc-amber-400: #f0913f;
+  --sc-amber-300: #f6ab6a;
+  --sc-amber-200: #fac79b;
+  --sc-amber-100: #fde3ca;
+
+  /* ---------- BASE: Signal Green (profit / go) ---------- */
+  --sc-green-700: #35692f;
+  --sc-green-600: #4f9a4c;
+  --sc-green-500: #72c66f; /* source --good */
+  --sc-green-400: #93d690;
+  --sc-green-200: #c3e9c1;
+
+  /* ---------- BASE: Signal Red (loss / danger) ---------- */
+  --sc-red-700: #99332e;
+  --sc-red-600: #d1534d;
+  --sc-red-500: #f0746e; /* source .loss color */
+  --sc-red-400: #f4938e;
+  --sc-red-200: #f9c4c1;
+
+  /* ============ SEMANTIC ALIASES ============ */
+
+  /* Surfaces */
+  --surface-void: var(--sc-neutral-950);
+  --surface-base: var(--sc-neutral-900);
+  --surface-panel: var(--sc-neutral-800);
+  --surface-panel-soft: var(--sc-neutral-700);
+  --surface-raised: var(--sc-neutral-750);
+  --surface-inset: var(--sc-neutral-850);
+  --surface-accent-soft: rgba(231, 126, 35, 0.12);
+  --surface-accent-faint: rgba(231, 126, 35, 0.06);
+  --surface-profit-soft: rgba(114, 198, 111, 0.12);
+  --surface-loss-soft: rgba(240, 116, 110, 0.12);
+  --surface-scrim: rgba(6, 9, 12, 0.72);
+
+  /* Borders (the omnipresent 1px hairline) */
+  --border-subtle: var(--sc-neutral-600);
+  --border-default: var(--sc-neutral-500); /* source --line */
+  --border-strong: var(--sc-neutral-400);
+  --border-accent: var(--sc-amber-500);
+
+  /* Text */
+  --text-primary: var(--sc-neutral-050);
+  --text-secondary: var(--sc-neutral-100);
+  --text-muted: var(--sc-neutral-200); /* source --muted */
+  --text-faint: var(--sc-neutral-300);
+  --text-accent: var(--sc-amber-500);
+  --text-on-accent: var(--sc-neutral-900);
+  --text-profit: var(--sc-green-500);
+  --text-loss: var(--sc-red-500);
+
+  /* Accent (interactive) */
+  --accent: var(--sc-amber-500);
+  --accent-hover: var(--sc-amber-400);
+  --accent-active: var(--sc-amber-600);
+  --accent-muted: var(--sc-amber-700);
+  --on-accent: var(--sc-neutral-900);
+
+  /* Status / semantics */
+  --status-profit: var(--sc-green-500);
+  --status-loss: var(--sc-red-500);
+  --status-success: var(--sc-green-500);
+  --status-danger: var(--sc-red-500);
+  --status-warning: var(--sc-amber-400);
+  --status-neutral: var(--sc-neutral-200);
+
+  /* Risk tiers (Low / Medium / High trade risk) */
+  --risk-low: var(--sc-green-500);
+  --risk-medium: var(--sc-amber-400);
+  --risk-high: var(--sc-red-500);
+
+  /* Focus */
+  --focus-ring: var(--sc-amber-500);
+}
