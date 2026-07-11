@@ -37,7 +37,7 @@
         <strong>Traders<span>Mate</span></strong>
       </div>
       <div class="topbar-actions">
-        <div class="api-status"><span class="status-led"></span><b>UEX CORP API 2.0</b><span>· DATENSATZ</span></div>
+        <div class="api-status"><span class="status-led"></span><b>UEX CORP API 2.0</b><span id="apiStatusText">· DATENSATZ</span></div>
         <button type="button" class="mode-reset" id="modeReset">Wechseln</button>
       </div>
     </header>
@@ -270,6 +270,13 @@
   <script src="shopping-prices.js"></script>
   <script src="ships-data.js"></script>
   <script src="ground-vehicles-data.js"></script>
-  <script src="script.js"></script>
+  <script src="daily-refresh.js"></script>
+  <script>
+    Promise.resolve(window.TRADERSMATE_DAILY_REFRESH).finally(function () {
+      var appScript = document.createElement('script');
+      appScript.src = 'script.js';
+      document.body.appendChild(appScript);
+    });
+  </script>
 </body>
 </html>

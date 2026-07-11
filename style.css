@@ -229,6 +229,10 @@ button {
   font-weight: var(--fw-medium);
 }
 
+.api-status .is-error {
+  color: var(--text-loss);
+}
+
 .status-led {
   width: 8px;
   height: 8px;
@@ -567,7 +571,7 @@ th {
 }
 
 td:nth-child(n + 3):nth-child(-n + 6) {
-  text-align: right;
+  text-align: left;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
@@ -656,6 +660,8 @@ tbody tr:last-child td {
 
 .more-shops-button {
   width: fit-content;
+  justify-self: end;
+  margin-left: auto;
   margin-top: var(--space-1);
   padding: 3px var(--space-4);
   border: var(--border-line);

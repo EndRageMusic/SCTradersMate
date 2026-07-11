@@ -143,7 +143,7 @@ function showMode(mode) {
   modeTitle.textContent = isTrading
     ? 'Handelsrouten'
     : isComponents
-      ? 'Schiffskomponenten'
+      ? 'Komponenten & Schiffswaffen'
       : isShips
         ? 'Schiffe kaufen'
         : isGroundVehicles
@@ -425,7 +425,7 @@ function subsystemOptions(system) {
 function isShoppingItemVisible(item) {
   const section = String(item.section || '').toLowerCase();
   if (activeMode === 'components') {
-    return section === 'systems';
+    return section === 'systems' || section === 'vehicle weapons';
   }
   return section !== 'commodities' && section !== 'systems';
 }
@@ -433,6 +433,26 @@ function isShoppingItemVisible(item) {
 function shoppingItemCategory(item) {
   if (item.category === 'Docking Collars') {
     return 'Fuel Nozzles';
+  }
+
+  if (item.section === 'Vehicle Weapons' && item.category === 'Guns') {
+    const name = String(item.name || '');
+    if (/\bscattergun\b/i.test(name)) {
+      return 'Scatterguns';
+    }
+    if (/\bgatling\b/i.test(name)) {
+      return 'Gatlings';
+    }
+    if (/^(SW16BR[123]|Tigerstrike T-19P)$/i.test(name)) {
+      return 'Gatlings';
+    }
+    if (/\brepeater\b/i.test(name)) {
+      return 'Repeaters';
+    }
+    if (/\bcannon\b/i.test(name)) {
+      return 'Cannons';
+    }
+    return 'Other Guns';
   }
 
   const isWeaponMagazine =
@@ -503,7 +523,7 @@ function renderShopping() {
   const matches = filteredItems.filter((item) => shoppingPricesByItem.has(item.id));
   const unavailableMatches = filteredItems.length - matches.length;
 
-  const resultName = activeMode === 'components' ? 'Schiffskomponenten' : 'Shopping-Items';
+  const resultName = activeMode === 'components' ? 'Komponenten und Schiffswaffen' : 'Shopping-Items';
   summary.textContent = `${matches.length} kaufbare ${resultName} angezeigt.`;
   if (!matches.length) {
     const text = unavailableMatches
