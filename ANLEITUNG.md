@@ -4,7 +4,7 @@ Diese Anleitung beschreibt alle Bereiche von TradersMate. Die angezeigten Preise
 
 ## Allgemeine Bedienung
 
-Nach dem Öffnen wählst du einen der sechs Arbeitsbereiche. Über die Navigationsleiste kannst du jederzeit direkt zu einem anderen Tab wechseln. Mit **Wechseln** kommst du zurück zur großen Bereichsauswahl.
+Nach dem Öffnen wählst du einen der sieben Arbeitsbereiche. Über die Navigationsleiste kannst du jederzeit direkt zu einem anderen Tab wechseln. Mit **Wechseln** kommst du zurück zur großen Bereichsauswahl.
 
 Die Statuszeile am unteren Rand zeigt die Anzahl der geladenen Terminals, Waren und Shop-Items sowie den Stand der Daten an.
 
@@ -112,9 +112,23 @@ Der Tab **Bodenfahrzeuge** funktioniert ähnlich wie der Schiffs-Tab.
 
 Angezeigt werden Bodenfahrzeuge, für die in den geladenen Daten eine Ingame-Kaufstelle vorhanden ist.
 
+## Tab Missionen
+
+Der Tab **Missionen** zeigt freigegebene Aufträge aus der aktuellen Star-Citizen-Wiki-API. Technische Platzhalter und unfertige Datensätze werden ausgeblendet.
+
+1. Suche nach Titel, Beschreibung oder Missionsgeber.
+2. Grenze die Liste nach **System**, **Missionsgeber**, **Tätigkeit** oder **Legalität** ein.
+3. Wähle unter **Belohnung** nur Missionen mit Blueprint-Chance, wenn du gezielt nach Bauplänen suchst.
+4. Klicke eine Mission an, um die vollständige Detailansicht oberhalb der Tabelle zu öffnen.
+
+Die Detailansicht zeigt, soweit im Spieldatensatz vorhanden, Auszahlung, Mindest-Rang, Rufgewinn, Zeitlimit, Fracht, Gegenstandsbelohnungen, Blueprint-Pool und weitere Voraussetzungen. Einige Missionen verwenden variable Orte oder Auszahlungen; diese Werte können deshalb als Platzhalter oder ohne festen Betrag erscheinen.
+
+Die Missionsliste wird einmal pro Tag zusammen mit den Handelsdaten aktualisiert. Erweiterte Details werden beim Anklicken der jeweiligen Mission nachgeladen.
+
 ## Hinweise zu Preisen und Daten
 
 - UEX-Daten können sich schneller ändern als der lokale Tagesstand.
 - Prüfe vor einem sehr großen Einkauf den Preis und Bestand noch einmal am Terminal.
 - Eine berechnete Marge garantiert nicht, dass die Zielstation deine vollständige Ladung sofort abnimmt.
 - Wenn die Tagesaktualisierung nicht erreichbar ist, verwendet TradersMate den letzten lokal verfügbaren Datensatz.
+- Missionsdaten stammen aus der community-gepflegten Star-Citizen-Wiki-API und können von den tatsächlich angebotenen Aufträgen im Spiel abweichen.

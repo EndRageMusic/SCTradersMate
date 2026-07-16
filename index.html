@@ -24,6 +24,7 @@
         <button type="button" class="mode-button" data-mode="components">Komponenten</button>
         <button type="button" class="mode-button" data-mode="ships">Schiffe</button>
         <button type="button" class="mode-button" data-mode="groundVehicles">Bodenfahrzeuge</button>
+        <button type="button" class="mode-button" data-mode="missions">Missionen</button>
       </div>
       <div class="gate-foot">
         <span><b id="gateTerminalCount">-</b> Terminals</span>
@@ -60,6 +61,7 @@
         <button type="button" data-mode="components">Komponenten</button>
         <button type="button" data-mode="ships">Schiffe</button>
         <button type="button" data-mode="groundVehicles">Bodenfahrzeuge</button>
+        <button type="button" data-mode="missions">Missionen</button>
       </div>
     </nav>
 
@@ -319,6 +321,64 @@
       </label>
     </section>
 
+    <section class="control-panel mission-controls is-hidden" id="missionControls">
+      <label>
+        <span>Mission suchen</span>
+        <input id="missionSearch" type="search" placeholder="Titel, Beschreibung oder Missionsgeber">
+      </label>
+
+      <label>
+        <span>System</span>
+        <select id="missionSystem">
+          <option value="">Alle Systeme</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Missionsgeber</span>
+        <select id="missionGiver">
+          <option value="">Alle Missionsgeber</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Tätigkeit</span>
+        <select id="missionActivity">
+          <option value="">Alle Tätigkeiten</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Legalität</span>
+        <select id="missionLegality">
+          <option value="">Legal und illegal</option>
+          <option value="legal">Legal</option>
+          <option value="illegal">Illegal</option>
+        </select>
+      </label>
+
+      <label class="mission-blueprint-filter">
+        <span>Belohnung</span>
+        <select id="missionBlueprint">
+          <option value="">Alle Missionen</option>
+          <option value="blueprint">Mit Blueprint-Chance</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="mission-detail is-hidden" id="missionDetail" aria-live="polite">
+      <header class="mission-detail-header">
+        <div>
+          <span class="route-kicker">AUSGEWÄHLTE MISSION</span>
+          <h2 id="missionDetailTitle">Mission auswählen</h2>
+        </div>
+        <div class="mission-detail-badges" id="missionDetailBadges"></div>
+      </header>
+      <div class="mission-detail-facts" id="missionDetailFacts"></div>
+      <div class="mission-detail-description" id="missionDetailDescription"></div>
+      <div class="mission-detail-sections" id="missionDetailSections"></div>
+    </section>
+
     <section class="summary" id="summary">
       Waehle eine Startstation und ein Material.
     </section>
@@ -400,6 +460,27 @@
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <section class="results-wrap mission-results is-hidden" id="missionResults">
+      <table>
+        <thead>
+          <tr>
+            <th>Mission</th>
+            <th>Tätigkeit</th>
+            <th>System</th>
+            <th>Missionsgeber</th>
+            <th>Auszahlung</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="missionBody">
+          <tr>
+            <td colspan="6" class="empty">Missionsdaten werden geladen.</td>
+          </tr>
+        </tbody>
+      </table>
+      <button type="button" class="mission-more-button is-hidden" id="missionMoreButton">Weitere Missionen anzeigen</button>
     </section>
 
     <footer class="statusbar">

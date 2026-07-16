@@ -2,6 +2,7 @@
   'use strict';
 
   const API_BASE = 'https://api.uexcorp.uk/2.0/';
+  const MISSION_API_BASE = 'https://api.star-citizen.wiki/api/missions';
   const DB_NAME = 'tradersmate-daily-data-v2';
   const STORE_NAME = 'snapshots';
   const SNAPSHOT_KEY = 'latest';
@@ -81,6 +82,7 @@
     window.TRADERSMATE_SHIPS = payload.ships;
     window.TRADERSMATE_FLYABLE_SHIPS = payload.flyableShips || payload.ships;
     window.TRADERSMATE_GROUND_VEHICLES = payload.groundVehicles;
+    window.TRADERSMATE_MISSIONS = payload.missions || [];
   }
 
   function normalizeTerminal(terminal) {
@@ -164,7 +166,13 @@
       'vehicles_purchases_prices_all',
       ...COMPONENT_CATEGORY_IDS.map((id) => `items_attributes?id_category=${id}`),
     ];
-    const responses = await Promise.all(endpoints.map(fetchData));
+    const [responses, missions] = await Promise.all([
+      Promise.all(endpoints.map(fetchData)),
+      fetchMissions().catch((error) => {
+        console.warn('Missionsdaten konnten nicht aktualisiert werden:', error);
+        return window.TRADERSMATE_MISSIONS || [];
+      }),
+    ]);
     const [commodities, commodityPrices, terminals, categories, itemPrices, vehicles, vehiclePrices] =
       responses;
     const attributeRows = responses.slice(7).flat();
@@ -232,7 +240,31 @@
       ships: buildVehicleData(vehicles, vehiclePrices, terminals, false),
       flyableShips: buildFlyableShipData(vehicles),
       groundVehicles: buildVehicleData(vehicles, vehiclePrices, terminals, true),
+      missions,
     };
+  }
+
+  async function fetchMissionPage(page) {
+    const response = await fetch(`${MISSION_API_BASE}?page[size]=100&page[number]=${page}`, {
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      throw new Error(`Missionen Seite ${page}: HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (!Array.isArray(payload.data)) {
+      throw new Error(`Missionen Seite ${page}: ungueltige Antwort`);
+    }
+    return payload;
+  }
+
+  async function fetchMissions() {
+    const firstPage = await fetchMissionPage(1);
+    const pageCount = Number(firstPage.meta?.last_page) || 1;
+    const remainingPages = await Promise.all(
+      Array.from({ length: Math.max(0, pageCount - 1) }, (_, index) => fetchMissionPage(index + 2)),
+    );
+    return [firstPage, ...remainingPages].flatMap((payload) => payload.data);
   }
 
   window.TRADERSMATE_DAILY_REFRESH = (async () => {
@@ -244,7 +276,7 @@
     }
 
     try {
-      if (cached?.day === localDay() && cached.payload) {
+      if (cached?.day === localDay() && cached.payload && Array.isArray(cached.payload.missions)) {
         applySnapshot(cached.payload);
         setStatus('· HEUTE AKTUELL');
         return;

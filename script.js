@@ -5,6 +5,7 @@ const shoppingPrices = window.TRADERSMATE_SHOPPING_PRICES || [];
 const ships = window.TRADERSMATE_SHIPS || [];
 const flyableShips = window.TRADERSMATE_FLYABLE_SHIPS || ships.filter((ship) => Number(ship.scu) > 0);
 const groundVehicles = window.TRADERSMATE_GROUND_VEHICLES || [];
+const missions = window.TRADERSMATE_MISSIONS || [];
 
 const modeGate = document.getElementById('modeGate');
 const modeButtons = [...document.querySelectorAll('[data-mode]')];
@@ -28,6 +29,22 @@ const groundVehicleResults = document.getElementById('groundVehicleResults');
 const groundVehicleSearch = document.getElementById('groundVehicleSearch');
 const groundVehicleManufacturer = document.getElementById('groundVehicleManufacturer');
 const groundVehicleBody = document.getElementById('groundVehicleBody');
+const missionControls = document.getElementById('missionControls');
+const missionResults = document.getElementById('missionResults');
+const missionSearch = document.getElementById('missionSearch');
+const missionSystem = document.getElementById('missionSystem');
+const missionGiver = document.getElementById('missionGiver');
+const missionActivity = document.getElementById('missionActivity');
+const missionLegality = document.getElementById('missionLegality');
+const missionBlueprint = document.getElementById('missionBlueprint');
+const missionBody = document.getElementById('missionBody');
+const missionMoreButton = document.getElementById('missionMoreButton');
+const missionDetail = document.getElementById('missionDetail');
+const missionDetailTitle = document.getElementById('missionDetailTitle');
+const missionDetailBadges = document.getElementById('missionDetailBadges');
+const missionDetailFacts = document.getElementById('missionDetailFacts');
+const missionDetailDescription = document.getElementById('missionDetailDescription');
+const missionDetailSections = document.getElementById('missionDetailSections');
 const cargoCapacityAlert = document.getElementById('cargoCapacityAlert');
 const cargoCapacityAlertText = document.getElementById('cargoCapacityAlertText');
 const dismissCargoCapacityAlert = document.getElementById('dismissCargoCapacityAlert');
@@ -90,6 +107,9 @@ let cargoManifest = loadCargoManifest();
 let routeWaypoints = [];
 let plannedStopCargo = new Map();
 let cargoCapacityAlertTimer = null;
+let visibleMissionCount = 100;
+let selectedMissionUuid = '';
+const missionDetailCache = new Map();
 
 const commoditiesById = new Map(data.commodities.map((commodity) => [commodity.id, commodity]));
 const terminalsById = new Map(data.terminals.map((terminal) => [terminal.id, terminal]));
@@ -174,6 +194,7 @@ function showMode(mode) {
   const isComponents = mode === 'components';
   const isShips = mode === 'ships';
   const isGroundVehicles = mode === 'groundVehicles';
+  const isMissions = mode === 'missions';
 
   modeEyebrow.textContent = isTrading
     ? 'Star Citizen Trading'
@@ -185,6 +206,8 @@ function showMode(mode) {
         ? 'Star Citizen Schiffe'
         : isGroundVehicles
           ? 'Star Citizen Bodenfahrzeuge'
+          : isMissions
+            ? 'Star Citizen Aufträge'
           : 'Star Citizen Shopping';
   modeTitle.textContent = isTrading
     ? 'Handelsrouten'
@@ -196,18 +219,23 @@ function showMode(mode) {
         ? 'Schiffe kaufen'
         : isGroundVehicles
           ? 'Bodenfahrzeuge'
+          : isMissions
+            ? 'Missionen'
           : 'Shopping';
   tradingControls.classList.toggle('is-hidden', !isTrading);
   tradingResults.classList.toggle('is-hidden', !isTrading);
   routePlannerControls.classList.toggle('is-hidden', !isRoutePlanner);
   routePlanner.classList.toggle('is-hidden', !isRoutePlanner);
-  shoppingControls.classList.toggle('is-hidden', isTrading || isRoutePlanner || isShips || isGroundVehicles);
-  shoppingResults.classList.toggle('is-hidden', isTrading || isRoutePlanner || isShips || isGroundVehicles);
+  shoppingControls.classList.toggle('is-hidden', isTrading || isRoutePlanner || isShips || isGroundVehicles || isMissions);
+  shoppingResults.classList.toggle('is-hidden', isTrading || isRoutePlanner || isShips || isGroundVehicles || isMissions);
   shoppingResults.classList.toggle('is-components-view', isComponents);
   shipControls.classList.toggle('is-hidden', !isShips);
   shipResults.classList.toggle('is-hidden', !isShips);
   groundVehicleControls.classList.toggle('is-hidden', !isGroundVehicles);
   groundVehicleResults.classList.toggle('is-hidden', !isGroundVehicles);
+  missionControls.classList.toggle('is-hidden', !isMissions);
+  missionResults.classList.toggle('is-hidden', !isMissions);
+  missionDetail.classList.toggle('is-hidden', !isMissions || !selectedMissionUuid);
   tradingMetrics.classList.toggle('is-hidden', !isTrading);
   selectedRoute.classList.toggle('is-hidden', !isTrading || !selectedRoute.dataset.selected);
   modeButtons.forEach((button) => {
@@ -228,6 +256,8 @@ function showMode(mode) {
     renderShips();
   } else if (isGroundVehicles) {
     renderGroundVehicles();
+  } else if (isMissions) {
+    renderMissions();
   } else {
     shoppingSearch.value = '';
     shoppingCategory.value = '';
@@ -1484,6 +1514,225 @@ function renderGroundVehicles() {
     .join('');
 }
 
+function missionActivityLabel(mission) {
+  if (mission.reward_scope && mission.reward_scope !== 'Other') {
+    return mission.reward_scope;
+  }
+  if (mission.has_hauling || mission.hauling_orders?.length || mission.hauling_summary?.length) {
+    return 'Hauling';
+  }
+  if (mission.has_combat) {
+    return 'Combat';
+  }
+  return mission.mission_type || 'Sonstige';
+}
+
+function missionReward(mission) {
+  const minimum = Number(mission.reward_min) || 0;
+  const maximum = Number(mission.reward_max) || 0;
+  const currency = mission.reward_currency || 'aUEC';
+  if (!minimum && !maximum) {
+    return '-';
+  }
+  if (maximum > minimum) {
+    return `${formatNumber(minimum)} - ${formatNumber(maximum)} ${currency}`;
+  }
+  return `${formatNumber(Math.max(minimum, maximum))} ${currency}`;
+}
+
+function missionSystemLabel(mission) {
+  return (mission.star_systems || []).join(', ') || '-';
+}
+
+function isReadableMissionText(value) {
+  if (!value) {
+    return false;
+  }
+  return !/(?:\[|\]|<=|PLACEHOLDER|UNINITIALIZED|~mission|^N\/A$|\bStory\d(?:No Meet)?$)/i.test(value);
+}
+
+function releasedMissions() {
+  return missions
+    .filter((mission) => mission.released !== false && !mission.not_for_release && !mission.work_in_progress)
+    .filter((mission) => isReadableMissionText(mission.title));
+}
+
+function missionSystemOptions() {
+  return [...new Set(releasedMissions().flatMap((mission) => mission.star_systems || []).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'de'))
+    .map((system) => ({ value: system, label: system }));
+}
+
+function missionGiverOptions() {
+  return [...new Set(releasedMissions().map((mission) => mission.mission_giver).filter(isReadableMissionText))]
+    .sort((a, b) => a.localeCompare(b, 'de'))
+    .map((giver) => ({ value: giver, label: giver }));
+}
+
+function missionActivityOptions() {
+  return [...new Set(releasedMissions().map(missionActivityLabel).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'de'))
+    .map((activity) => ({ value: activity, label: activity }));
+}
+
+function filteredMissions() {
+  const query = missionSearch.value.trim().toLowerCase();
+  return releasedMissions()
+    .filter((mission) => !missionSystem.value || (mission.star_systems || []).includes(missionSystem.value))
+    .filter((mission) => !missionGiver.value || mission.mission_giver === missionGiver.value)
+    .filter((mission) => !missionActivity.value || missionActivityLabel(mission) === missionActivity.value)
+    .filter((mission) => !missionLegality.value || (mission.illegal ? 'illegal' : 'legal') === missionLegality.value)
+    .filter((mission) => missionBlueprint.value !== 'blueprint' || mission.has_blueprints)
+    .filter((mission) => {
+      if (!query) {
+        return true;
+      }
+      return [mission.title, mission.description, mission.mission_giver, missionActivityLabel(mission), missionSystemLabel(mission)]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
+    })
+    .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'de'));
+}
+
+function missionStatusBadges(mission) {
+  const badges = [
+    `<span class="${mission.illegal ? 'is-illegal' : 'is-legal'}">${mission.illegal ? 'Illegal' : 'Legal'}</span>`,
+  ];
+  if (mission.has_blueprints) {
+    badges.push('<span class="is-blueprint">Blueprint</span>');
+  }
+  if (mission.once_only) {
+    badges.push('<span>Einmalig</span>');
+  }
+  return badges.join('');
+}
+
+function renderMissions() {
+  const matches = filteredMissions();
+  const visible = matches.slice(0, visibleMissionCount);
+  summary.textContent = `${matches.length} verfügbare Missionen gefunden. Quelle: Star Citizen Wiki API.`;
+  missionMoreButton.classList.toggle('is-hidden', visible.length >= matches.length);
+  missionMoreButton.textContent = `Weitere Missionen anzeigen (${matches.length - visible.length})`;
+
+  if (!missions.length) {
+    summary.textContent = 'Missionsdaten konnten nicht geladen werden. Beim nächsten Öffnen wird die Quelle erneut abgefragt.';
+    missionBody.innerHTML = '<tr><td colspan="6" class="empty">Keine Missionsdaten verfügbar.</td></tr>';
+    missionMoreButton.classList.add('is-hidden');
+    return;
+  }
+  if (!matches.length) {
+    missionBody.innerHTML = '<tr><td colspan="6" class="empty">Keine passende Mission gefunden.</td></tr>';
+    return;
+  }
+
+  missionBody.innerHTML = visible
+    .map((mission) => `
+      <tr class="${mission.uuid === selectedMissionUuid ? 'is-selected' : ''}" data-mission-uuid="${escapeHtml(mission.uuid)}" tabindex="0" role="button" aria-selected="${mission.uuid === selectedMissionUuid}">
+        <td>
+          <strong>${escapeHtml(mission.title || 'Unbenannte Mission')}</strong>
+          ${mission.once_only ? '<span class="destination-sub">Einmaliger Auftrag</span>' : ''}
+        </td>
+        <td>${escapeHtml(missionActivityLabel(mission))}</td>
+        <td>${escapeHtml(missionSystemLabel(mission))}</td>
+        <td>${escapeHtml(mission.mission_giver || '-')}</td>
+        <td>${escapeHtml(missionReward(mission))}</td>
+        <td><div class="mission-badges">${missionStatusBadges(mission)}</div></td>
+      </tr>
+    `)
+    .join('');
+}
+
+function missionFact(label, value) {
+  return `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || '-')}</strong></div>`;
+}
+
+function missionListSection(title, items) {
+  const values = [...new Set(items.filter(Boolean))];
+  if (!values.length) {
+    return '';
+  }
+  return `<section><h3>${escapeHtml(title)}</h3>${values.map((item) => `<span>${escapeHtml(item)}</span>`).join('')}</section>`;
+}
+
+function renderMissionDetail(mission, loading) {
+  const reputation = Array.isArray(mission.reputation_gained)
+    ? mission.reputation_gained.reduce((total, entry) => total + (Number(entry.amount) || 0), 0)
+    : Number(mission.reputation_amount) || 0;
+  const standing = mission.reputation_prerequisite?.min_standing?.name || mission.min_standing?.name || '-';
+  const duration = mission.time_to_complete_minutes ? `${mission.time_to_complete_minutes} Minuten` : '-';
+  missionDetailTitle.textContent = mission.title || 'Unbenannte Mission';
+  missionDetailBadges.innerHTML = missionStatusBadges(mission);
+  missionDetailFacts.innerHTML = [
+    missionFact('Missionsgeber', mission.mission_giver || '-'),
+    missionFact('System', missionSystemLabel(mission)),
+    missionFact('Auszahlung', missionReward(mission)),
+    missionFact('Tätigkeit', missionActivityLabel(mission)),
+    missionFact('Mindest-Rang', standing),
+    missionFact('Ruf', reputation ? `+${formatNumber(reputation)}` : '-'),
+    missionFact('Zeitlimit', duration),
+    missionFact('Spielversion', mission.game_version || '-'),
+  ].join('');
+  const description = (mission.description || 'Keine Beschreibung vorhanden.').replace(/<\/?EM\d+>/gi, '');
+  missionDetailDescription.innerHTML = escapeHtml(description).replace(/\r?\n/g, '<br>');
+
+  const hauling = (mission.hauling_orders || mission.hauling_summary || []).map((entry) => {
+    const amount = entry.min_amount || entry.max_amount;
+    return `${entry.name || 'Fracht'}${amount ? ` × ${amount}` : ''}`;
+  });
+  const rewards = (mission.reward_items || []).map((entry) => `${entry.name}${entry.amount ? ` × ${entry.amount}` : ''}`);
+  const blueprints = (mission.blueprints || []).flatMap((pool) =>
+    (pool.items || []).map((item) => `${item.name}${pool.drop_chance_percent ? ` (${pool.drop_chance_percent}%)` : ''}`),
+  );
+  const requirements = [];
+  if (mission.min_crime_stat) requirements.push(`Mindestens CrimeStat ${mission.min_crime_stat}`);
+  if (mission.max_crime_stat !== null && mission.max_crime_stat !== undefined) requirements.push(`Maximal CrimeStat ${mission.max_crime_stat}`);
+  if (mission.shareable) requirements.push('Mit Gruppe teilbar');
+  if (mission.once_only) requirements.push('Nur einmal abschließbar');
+  if (mission.has_combat) requirements.push('Kampfeinsatz');
+
+  missionDetailSections.innerHTML = [
+    missionListSection('Fracht und Missionsgegenstände', hauling),
+    missionListSection('Gegenstandsbelohnungen', rewards),
+    missionListSection('Blueprint-Pool', blueprints),
+    missionListSection('Voraussetzungen', requirements),
+    loading ? '<section class="mission-detail-loading"><h3>Details</h3><span>Zusätzliche Missionsdaten werden geladen.</span></section>' : '',
+  ].join('');
+}
+
+async function selectMission(uuid) {
+  const mission = missions.find((entry) => entry.uuid === uuid);
+  if (!mission) {
+    return;
+  }
+  selectedMissionUuid = uuid;
+  missionDetail.classList.remove('is-hidden');
+  renderMissions();
+  renderMissionDetail(mission, !missionDetailCache.has(uuid));
+  missionDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (missionDetailCache.has(uuid)) {
+    renderMissionDetail(missionDetailCache.get(uuid), false);
+    return;
+  }
+  try {
+    const response = await fetch(mission.link, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    missionDetailCache.set(uuid, payload.data);
+    if (selectedMissionUuid === uuid) {
+      renderMissionDetail(payload.data, false);
+    }
+  } catch (error) {
+    console.warn('Missionsdetails konnten nicht geladen werden:', error);
+    if (selectedMissionUuid === uuid) {
+      renderMissionDetail(mission, false);
+    }
+  }
+}
+
 function terminalArea(terminal) {
   return [terminal.station, terminal.city, terminal.outpost, terminal.planet]
     .filter(Boolean)
@@ -1817,6 +2066,32 @@ groundVehicleBody.addEventListener('click', (event) => {
   shopList.querySelectorAll('.extra-shop').forEach((shop) => shop.classList.remove('is-hidden'));
   button.remove();
 });
+missionBody.addEventListener('click', (event) => {
+  const row = event.target.closest('[data-mission-uuid]');
+  if (row) {
+    selectMission(row.dataset.missionUuid);
+  }
+});
+missionBody.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return;
+  }
+  const row = event.target.closest('[data-mission-uuid]');
+  if (row) {
+    event.preventDefault();
+    selectMission(row.dataset.missionUuid);
+  }
+});
+[missionSearch, missionSystem, missionGiver, missionActivity, missionLegality, missionBlueprint].forEach((control) => {
+  control.addEventListener(control === missionSearch ? 'input' : 'change', () => {
+    visibleMissionCount = 100;
+    renderMissions();
+  });
+});
+missionMoreButton.addEventListener('click', () => {
+  visibleMissionCount += 100;
+  renderMissions();
+});
 modeReset.addEventListener('click', showModeGate);
 
 modeButtons.forEach((button) => {
@@ -1827,6 +2102,9 @@ refreshOptions();
 fillSelect(shoppingCategory, shoppingCategoryOptions(), 'Alle Kategorien');
 fillSelect(shipManufacturer, shipManufacturerOptions(), 'Alle Hersteller');
 fillSelect(groundVehicleManufacturer, groundVehicleManufacturerOptions(), 'Alle Hersteller');
+fillSelect(missionSystem, missionSystemOptions(), 'Alle Systeme');
+fillSelect(missionGiver, missionGiverOptions(), 'Alle Missionsgeber');
+fillSelect(missionActivity, missionActivityOptions(), 'Alle Tätigkeiten');
 populateRouteShipOptions();
 refreshRoutePlannerOptions();
 renderCargoManifest();
