@@ -117,11 +117,13 @@ Angezeigt werden Bodenfahrzeuge, für die in den geladenen Daten eine Ingame-Kau
 Der Tab **Missionen** zeigt freigegebene Aufträge aus der aktuellen Star-Citizen-Wiki-API. Technische Platzhalter und unfertige Datensätze werden ausgeblendet.
 
 1. Suche nach Titel, Beschreibung oder Missionsgeber.
-2. Grenze die Liste nach **System**, **Missionsgeber**, **Tätigkeit** oder **Legalität** ein.
+2. Grenze die Liste nach **System**, **Missionsgeber**, **Tätigkeit**, **Legalität** oder **Mindest-Rang** ein.
 3. Wähle unter **Belohnung** nur Missionen mit Blueprint-Chance, wenn du gezielt nach Bauplänen suchst.
 4. Klicke eine Mission an, um die vollständige Detailansicht oberhalb der Tabelle zu öffnen.
 
 Die Detailansicht zeigt, soweit im Spieldatensatz vorhanden, Auszahlung, Mindest-Rang, Rufgewinn, Zeitlimit, Fracht, Gegenstandsbelohnungen, Blueprint-Pool und weitere Voraussetzungen. Einige Missionen verwenden variable Orte oder Auszahlungen; diese Werte können deshalb als Platzhalter oder ohne festen Betrag erscheinen.
+
+Unter **Mindest-Rang** kannst du einen konkreten Rufrang oder **Kein Mindestrang** auswählen. Die Rangnamen stammen direkt aus den Spieldaten und können je nach Missionsgeber unterschiedlich sein.
 
 Die Missionsliste wird einmal pro Tag zusammen mit den Handelsdaten aktualisiert. Erweiterte Details werden beim Anklicken der jeweiligen Mission nachgeladen.
 

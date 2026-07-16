@@ -379,7 +379,11 @@ button {
 }
 
 .mission-controls {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mission-controls label:first-child {
+  grid-column: span 2;
 }
 
 .mission-detail {
@@ -1898,6 +1902,10 @@ tbody tr:last-child td {
   .mission-controls,
   .mission-detail-facts {
     grid-template-columns: 1fr;
+  }
+
+  .mission-controls label:first-child {
+    grid-column: auto;
   }
 
   .mission-detail-facts > div,

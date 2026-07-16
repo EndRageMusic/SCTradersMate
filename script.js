@@ -37,6 +37,7 @@ const missionGiver = document.getElementById('missionGiver');
 const missionActivity = document.getElementById('missionActivity');
 const missionLegality = document.getElementById('missionLegality');
 const missionBlueprint = document.getElementById('missionBlueprint');
+const missionRank = document.getElementById('missionRank');
 const missionBody = document.getElementById('missionBody');
 const missionMoreButton = document.getElementById('missionMoreButton');
 const missionDetail = document.getElementById('missionDetail');
@@ -1575,6 +1576,35 @@ function missionActivityOptions() {
     .map((activity) => ({ value: activity, label: activity }));
 }
 
+function missionMinimumRank(mission) {
+  const rank =
+    mission.reputation_prerequisite?.min_standing?.name ||
+    mission.min_standing?.display_name ||
+    mission.min_standing?.name ||
+    mission.min_standing_name ||
+    '';
+  return isReadableMissionText(rank) ? rank : '';
+}
+
+function missionRankOptions() {
+  const ranks = new Map();
+  releasedMissions().forEach((mission) => {
+    const rank = missionMinimumRank(mission);
+    if (!rank) {
+      return;
+    }
+    const reputation = Number(mission.min_standing?.min_reputation);
+    const current = ranks.get(rank);
+    ranks.set(rank, Number.isFinite(reputation) ? Math.min(current ?? reputation, reputation) : current ?? Infinity);
+  });
+  return [
+    { value: '__none__', label: 'Kein Mindestrang' },
+    ...[...ranks.entries()]
+      .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0], 'de'))
+      .map(([rank]) => ({ value: rank, label: rank })),
+  ];
+}
+
 function filteredMissions() {
   const query = missionSearch.value.trim().toLowerCase();
   return releasedMissions()
@@ -1583,6 +1613,13 @@ function filteredMissions() {
     .filter((mission) => !missionActivity.value || missionActivityLabel(mission) === missionActivity.value)
     .filter((mission) => !missionLegality.value || (mission.illegal ? 'illegal' : 'legal') === missionLegality.value)
     .filter((mission) => missionBlueprint.value !== 'blueprint' || mission.has_blueprints)
+    .filter((mission) => {
+      if (!missionRank.value) {
+        return true;
+      }
+      const rank = missionMinimumRank(mission);
+      return missionRank.value === '__none__' ? !rank : rank === missionRank.value;
+    })
     .filter((mission) => {
       if (!query) {
         return true;
@@ -1660,7 +1697,7 @@ function renderMissionDetail(mission, loading) {
   const reputation = Array.isArray(mission.reputation_gained)
     ? mission.reputation_gained.reduce((total, entry) => total + (Number(entry.amount) || 0), 0)
     : Number(mission.reputation_amount) || 0;
-  const standing = mission.reputation_prerequisite?.min_standing?.name || mission.min_standing?.name || '-';
+  const standing = missionMinimumRank(mission) || '-';
   const duration = mission.time_to_complete_minutes ? `${mission.time_to_complete_minutes} Minuten` : '-';
   missionDetailTitle.textContent = mission.title || 'Unbenannte Mission';
   missionDetailBadges.innerHTML = missionStatusBadges(mission);
@@ -2082,7 +2119,7 @@ missionBody.addEventListener('keydown', (event) => {
     selectMission(row.dataset.missionUuid);
   }
 });
-[missionSearch, missionSystem, missionGiver, missionActivity, missionLegality, missionBlueprint].forEach((control) => {
+[missionSearch, missionSystem, missionGiver, missionActivity, missionLegality, missionBlueprint, missionRank].forEach((control) => {
   control.addEventListener(control === missionSearch ? 'input' : 'change', () => {
     visibleMissionCount = 100;
     renderMissions();
@@ -2105,6 +2142,7 @@ fillSelect(groundVehicleManufacturer, groundVehicleManufacturerOptions(), 'Alle 
 fillSelect(missionSystem, missionSystemOptions(), 'Alle Systeme');
 fillSelect(missionGiver, missionGiverOptions(), 'Alle Missionsgeber');
 fillSelect(missionActivity, missionActivityOptions(), 'Alle Tätigkeiten');
+fillSelect(missionRank, missionRankOptions(), 'Alle Ränge');
 populateRouteShipOptions();
 refreshRoutePlannerOptions();
 renderCargoManifest();
