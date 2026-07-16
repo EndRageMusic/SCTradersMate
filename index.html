@@ -19,6 +19,7 @@
       <p class="gate-lede">Wähle deinen Arbeitsbereich. Preise und Verfügbarkeiten basieren auf dem lokalen UEX-Datensatz.</p>
       <div class="mode-actions">
         <button type="button" class="mode-button" data-mode="trading">Trading</button>
+        <button type="button" class="mode-button" data-mode="routePlanner">Routenplaner</button>
         <button type="button" class="mode-button" data-mode="shopping">Shopping</button>
         <button type="button" class="mode-button" data-mode="components">Komponenten</button>
         <button type="button" class="mode-button" data-mode="ships">Schiffe</button>
@@ -42,10 +43,19 @@
       </div>
     </header>
 
+    <div class="cargo-capacity-alert is-hidden" id="cargoCapacityAlert" role="alert" aria-live="assertive">
+      <div>
+        <strong>Frachtraum überschritten</strong>
+        <span id="cargoCapacityAlertText">Die eingetragene Fracht passt nicht in das ausgewählte Schiff.</span>
+      </div>
+      <button type="button" id="dismissCargoCapacityAlert" title="Meldung schließen" aria-label="Meldung schließen">&times;</button>
+    </div>
+
     <nav class="mode-nav" aria-label="Hauptbereiche">
       <span class="mode-nav-label">Arbeitsbereich</span>
       <div class="mode-nav-actions">
         <button type="button" data-mode="trading">Handel</button>
+        <button type="button" data-mode="routePlanner">Routenplaner</button>
         <button type="button" data-mode="shopping">Shopping</button>
         <button type="button" data-mode="components">Komponenten</button>
         <button type="button" data-mode="ships">Schiffe</button>
@@ -135,7 +145,11 @@
     <section class="selected-route is-hidden" id="selectedRoute" aria-live="polite">
       <div class="selected-route-heading">
         <span>Ausgewählte Route</span>
-        <strong id="selectedRouteDestination">-</strong>
+        <div class="selected-route-actions">
+          <strong id="selectedRouteDestination">-</strong>
+          <button type="button" class="route-map-button" id="addCargoButton">Fracht merken</button>
+          <button type="button" class="route-map-button" id="openRoutePlanner">Auf Karte</button>
+        </div>
       </div>
       <dl>
         <div><dt>System</dt><dd id="selectedRouteSystem">-</dd></div>
@@ -145,6 +159,136 @@
         <div><dt>Marge</dt><dd id="selectedRouteMargin">-</dd></div>
         <div><dt>Hinweise</dt><dd id="selectedRouteFlags">-</dd></div>
       </dl>
+    </section>
+
+    <section class="control-panel is-hidden" id="routePlannerControls">
+      <label>
+        <span>Systemfilter</span>
+        <select id="routeSystemSelect">
+          <option value="">Alle Systeme</option>
+        </select>
+      </label>
+
+      <label class="route-ship-field">
+        <span class="route-ship-heading">Schiff <small id="routeShipCapacity">Kapazität: - SCU</small></span>
+        <select id="routeShipSelect">
+          <option value="">Schiff wählen</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Start</span>
+        <select id="routeStartSelect">
+          <option value="">Start wählen</option>
+        </select>
+      </label>
+
+      <button type="button" class="route-swap-button" id="routeSwapButton" title="Start und Ziel tauschen" aria-label="Start und Ziel tauschen">
+        <span aria-hidden="true">&harr;</span>
+      </button>
+
+      <label>
+        <span>Ziel</span>
+        <select id="routeDestinationSelect">
+          <option value="">Ziel wählen</option>
+        </select>
+      </label>
+
+      <button type="button" class="route-clear-button" id="routeClearButton">Route leeren</button>
+    </section>
+
+    <section class="route-planner is-hidden" id="routePlanner" aria-live="polite">
+      <div class="route-stop-builder">
+        <label>
+          <span>Zwischenstopp</span>
+          <select id="routeWaypointSelect">
+            <option value="">Station als Stopp wählen</option>
+          </select>
+        </label>
+        <button type="button" class="route-clear-button" id="addRouteWaypointButton">Stop hinzufügen</button>
+        <div class="route-stop-list" id="routeWaypointList">
+          <span class="route-stop-empty">Keine Zwischenstopps geplant.</span>
+        </div>
+      </div>
+
+      <header class="route-planner-header">
+        <div>
+          <span class="route-kicker">NAVIGATION // SCHEMATISCHE KARTE</span>
+          <h2 id="routeMapTitle">Route auswählen</h2>
+        </div>
+        <div class="route-map-legend" aria-label="Kartenlegende">
+          <span><i class="legend-dot start"></i>Start</span>
+          <span><i class="legend-dot destination"></i>Ziel</span>
+          <span><i class="legend-line"></i>Route</span>
+        </div>
+      </header>
+
+      <div class="route-map-stage">
+        <svg id="routeMap" viewBox="0 0 1200 620" role="img" aria-labelledby="routeMapTitle routeMapDescription"></svg>
+        <p class="route-map-empty" id="routeMapEmpty">Wähle Start und Ziel, um die Route darzustellen.</p>
+      </div>
+
+      <div class="route-itinerary" id="routeItinerary">
+        <article>
+          <span>Start</span>
+          <strong id="routeStartLabel">-</strong>
+          <small id="routeStartArea">-</small>
+        </article>
+        <article class="route-itinerary-leg">
+          <span>Verbindung</span>
+          <strong id="routeConnectionLabel">-</strong>
+          <small id="routeMapDescription">Keine Entfernung im UEX-Datensatz</small>
+        </article>
+        <article>
+          <span>Ziel</span>
+          <strong id="routeDestinationLabel">-</strong>
+          <small id="routeDestinationArea">-</small>
+        </article>
+      </div>
+
+      <section class="route-opportunities" aria-labelledby="routeOpportunitiesTitle">
+        <header class="route-opportunities-header">
+          <span class="route-kicker">STOPP-DATEN // HANDELSMÖGLICHKEITEN</span>
+          <h2 id="routeOpportunitiesTitle">Abladen und mitnehmen</h2>
+        </header>
+        <div id="routeOpportunitiesBody" class="route-opportunities-body">
+          <p class="route-opportunities-empty">Plane mindestens einen Stopp, um passende Waren anzuzeigen.</p>
+        </div>
+      </section>
+
+      <section class="cargo-manifest" aria-labelledby="cargoManifestTitle">
+        <header class="cargo-manifest-header">
+          <div>
+            <span class="route-kicker">FRACHT // BESTER ABLADEORT</span>
+            <h2 id="cargoManifestTitle">Gekaufte Waren</h2>
+          </div>
+          <div class="cargo-header-actions">
+            <button type="button" class="route-map-button" id="planCargoRouteButton">Alle Stops planen</button>
+            <button type="button" class="route-clear-button" id="clearCargoButton">Liste leeren</button>
+          </div>
+        </header>
+        <div class="cargo-summary" id="cargoSummary">Noch keine gekauften Waren gespeichert.</div>
+        <div class="cargo-table-wrap">
+          <table class="cargo-table">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>SCU</th>
+                <th>Einkauf / SCU</th>
+                <th>Gekauft bei</th>
+                <th>Abladeort</th>
+                <th>Verkauf</th>
+                <th>Gewinn</th>
+                <th>Marge</th>
+                <th>Aktion</th>
+              </tr>
+            </thead>
+            <tbody id="cargoBody">
+              <tr><td colspan="9" class="empty">Noch keine Fracht gespeichert.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
 
     <section class="control-panel is-hidden" id="shipControls">

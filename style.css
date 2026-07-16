@@ -71,6 +71,7 @@ button {
 .mode-gate:not(.is-hidden) ~ .control-panel,
 .mode-gate:not(.is-hidden) ~ .trading-metrics,
 .mode-gate:not(.is-hidden) ~ .selected-route,
+.mode-gate:not(.is-hidden) ~ .route-planner,
 .mode-gate:not(.is-hidden) ~ .summary,
 .mode-gate:not(.is-hidden) ~ .results-wrap,
 .mode-gate:not(.is-hidden) ~ .statusbar {
@@ -132,7 +133,7 @@ button {
 
 .mode-actions {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: var(--space-6);
 }
 
@@ -260,6 +261,55 @@ button {
   color: var(--text-primary);
 }
 
+.cargo-capacity-alert {
+  position: fixed;
+  top: 72px;
+  right: var(--space-8);
+  z-index: calc(var(--z-sticky) + 1);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: min(520px, calc(100% - 32px));
+  padding: var(--space-7) var(--space-8);
+  border: 1px solid var(--text-loss);
+  border-left-width: 4px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lg);
+}
+
+.cargo-capacity-alert strong,
+.cargo-capacity-alert span {
+  display: block;
+}
+
+.cargo-capacity-alert strong {
+  color: var(--text-loss);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+}
+
+.cargo-capacity-alert span {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.cargo-capacity-alert button {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: var(--border-line);
+  background: transparent;
+  color: var(--text-loss);
+  font-size: var(--text-lg);
+  cursor: pointer;
+}
+
+.cargo-capacity-alert button:hover {
+  border-color: var(--text-loss);
+  background: rgba(232, 92, 92, 0.08);
+}
+
 .mode-nav {
   display: flex;
   align-items: center;
@@ -318,6 +368,7 @@ button {
 .control-panel,
 .trading-metrics,
 .selected-route,
+.route-planner,
 .summary,
 .results-wrap {
   width: min(var(--container-max), calc(100% - 32px));
@@ -510,6 +561,583 @@ input:disabled {
 
 .selected-route-heading strong {
   font-family: var(--font-display);
+}
+
+.selected-route-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+
+.route-map-button,
+.route-clear-button {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-6);
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--text-accent);
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.route-map-button:hover,
+.route-clear-button:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.route-clear-button:disabled {
+  border-color: var(--border-default);
+  color: var(--text-faint);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.route-map-button:disabled {
+  border-color: var(--border-default);
+  color: var(--text-faint);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+#routePlannerControls {
+  grid-template-columns: minmax(140px, 0.7fr) minmax(220px, 1.2fr) minmax(220px, 1.3fr) 48px minmax(220px, 1.3fr) auto;
+  grid-template-areas: 'system ship start swap destination clear';
+  align-items: end;
+}
+
+#routePlannerControls label:nth-of-type(1) { grid-area: system; }
+#routePlannerControls label:nth-of-type(2) { grid-area: ship; }
+#routePlannerControls label:nth-of-type(3) { grid-area: start; }
+#routePlannerControls label:nth-of-type(4) { grid-area: destination; }
+#routePlannerControls .route-swap-button { grid-area: swap; }
+#routePlannerControls .route-clear-button { grid-area: clear; }
+
+.route-ship-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.route-ship-heading small {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-medium);
+  text-align: right;
+  text-transform: none;
+}
+
+.route-ship-heading small.profit { color: var(--text-profit); }
+.route-ship-heading small.loss { color: var(--text-loss); }
+
+.route-swap-button {
+  width: 48px;
+  height: var(--control-height);
+  border: var(--border-line);
+  background: var(--surface-panel-soft);
+  color: var(--text-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  cursor: pointer;
+}
+
+.route-swap-button:hover {
+  border-color: var(--accent);
+  background: var(--surface-accent-faint);
+}
+
+.route-clear-button {
+  height: var(--control-height);
+}
+
+.route-planner {
+  margin-top: var(--space-8);
+  border: var(--border-line);
+  background: var(--surface-panel);
+}
+
+#routePlannerControls,
+.route-planner {
+  width: min(1540px, calc(100% - 32px));
+}
+
+.route-stop-builder {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: var(--space-6);
+  align-items: end;
+  padding: var(--space-8) var(--space-10);
+  border-bottom: var(--border-line);
+  background: var(--surface-panel-soft);
+}
+
+.route-stop-list {
+  grid-column: 1 / -1;
+  display: grid;
+  border-top: var(--border-line);
+}
+
+.route-stop-empty {
+  padding-top: var(--space-5);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.route-stop-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: var(--space-5);
+  align-items: center;
+  min-height: 58px;
+  border-bottom: var(--border-line);
+}
+
+.route-stop-item:last-child { border-bottom: 0; }
+
+.route-stop-number {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--accent);
+  color: var(--text-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.route-stop-name strong,
+.route-stop-name small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.route-stop-name small {
+  margin-top: var(--space-1);
+  color: var(--text-faint);
+}
+
+.route-stop-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.route-stop-actions button {
+  width: 34px;
+  height: 34px;
+  border: var(--border-line);
+  background: var(--surface-inset);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.route-stop-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text-accent);
+}
+
+.route-stop-actions button:disabled {
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+.route-planner-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-10);
+  border-bottom: var(--border-line);
+}
+
+.route-kicker {
+  color: var(--text-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.route-planner h2 {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+}
+
+.route-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.route-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 50%;
+}
+
+.legend-dot.start { border-color: var(--accent); }
+.legend-dot.destination { border-color: var(--status-profit); }
+
+.legend-line {
+  width: 24px;
+  border-top: 2px solid var(--accent);
+}
+
+.route-map-stage {
+  position: relative;
+  aspect-ratio: 1200 / 620;
+  min-height: 360px;
+  overflow: hidden;
+  background-color: var(--surface-void);
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.38) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.24) 0 1px, transparent 1.5px),
+    linear-gradient(rgba(128, 145, 158, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(128, 145, 158, 0.06) 1px, transparent 1px);
+  background-size: 173px 137px, 211px 181px, 48px 48px, 48px 48px;
+}
+
+#routeMap {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+}
+
+.route-map-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  text-align: center;
+  pointer-events: none;
+}
+
+.route-map-system-orbit,
+.route-map-subsystem-orbit {
+  fill: none;
+  stroke: var(--border-default);
+  stroke-width: 2;
+  stroke-dasharray: 6 10;
+}
+
+.route-map-subsystem-orbit {
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+.route-map-route-glow {
+  fill: none;
+  stroke: rgba(231, 126, 35, 0.18);
+  stroke-width: 14;
+}
+
+.route-map-route {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 12 8;
+}
+
+.route-map-system,
+.route-map-body,
+.route-map-endpoint {
+  stroke-width: 3;
+}
+
+.route-map-system { fill: var(--surface-panel); stroke: var(--text-muted); }
+.route-map-body { fill: var(--surface-inset); stroke: var(--border-strong); }
+.route-map-endpoint.start { fill: var(--surface-panel); stroke: var(--accent); }
+.route-map-endpoint.destination { fill: var(--surface-panel); stroke: var(--status-profit); }
+.route-map-endpoint.waypoint { fill: var(--surface-panel); stroke: var(--text-secondary); }
+
+.route-map-label,
+.route-map-caption,
+.route-map-endpoint-label {
+  fill: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0;
+}
+
+.route-map-label { font-size: 20px; text-transform: uppercase; }
+.route-map-caption { fill: var(--text-muted); font-family: var(--font-mono); font-size: 13px; }
+.route-map-endpoint-label { font-size: 15px; }
+.route-map-stop-number { fill: var(--text-primary); font-family: var(--font-mono); font-size: 13px; font-weight: var(--fw-bold); }
+
+.route-itinerary {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr 1fr;
+  border-top: var(--border-line);
+}
+
+.route-itinerary article {
+  min-width: 0;
+  padding: var(--space-8) var(--space-10);
+  border-right: var(--border-line);
+}
+
+.route-itinerary article:last-child { border-right: 0; }
+.route-itinerary-leg { background: var(--surface-panel-soft); }
+
+.route-itinerary span {
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+}
+
+.route-itinerary strong,
+.route-itinerary small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.route-itinerary strong { margin-top: var(--space-3); font-family: var(--font-display); }
+.route-itinerary small { margin-top: var(--space-2); color: var(--text-faint); }
+
+.route-opportunities {
+  border-top: var(--border-line);
+}
+
+.route-opportunities-header {
+  padding: var(--space-10);
+  border-bottom: var(--border-line);
+}
+
+.route-opportunities-body {
+  display: grid;
+}
+
+.route-stop-trade {
+  border-bottom: var(--border-line);
+}
+
+.route-stop-trade:last-child { border-bottom: 0; }
+
+.route-stop-trade > header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-10);
+  background: var(--surface-panel-soft);
+}
+
+.route-stop-trade > header strong,
+.route-stop-trade > header small {
+  display: block;
+}
+
+.route-stop-trade > header small {
+  margin-top: var(--space-1);
+  color: var(--text-faint);
+}
+
+.route-stop-trade-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+}
+
+.route-stop-trade-grid > section {
+  min-width: 0;
+  padding: var(--space-8) var(--space-10);
+  border-right: var(--border-line);
+}
+
+.route-stop-trade-grid > section:last-child { border-right: 0; }
+
+.route-stop-trade h3 {
+  margin: 0 0 var(--space-5);
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+}
+
+.route-opportunity-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(170px, 1fr) minmax(110px, auto) minmax(190px, auto);
+  gap: var(--space-5);
+  align-items: center;
+  min-height: 54px;
+  border-top: var(--border-line);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.route-opportunity-return strong,
+.route-opportunity-return small {
+  display: block;
+}
+
+.route-opportunity-return small {
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.route-pickup-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.route-pickup-input {
+  width: 72px;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+}
+
+.route-opportunity-row span strong,
+.route-opportunity-row span small {
+  display: block;
+}
+
+.route-opportunity-row span small {
+  margin-top: var(--space-1);
+  color: var(--text-faint);
+}
+
+.route-opportunity-target {
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.route-opportunities-empty {
+  margin: 0;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.route-opportunity-more {
+  border-top: var(--border-line);
+}
+
+.route-opportunity-more summary {
+  padding: var(--space-5) 0;
+  color: var(--text-accent);
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.cargo-manifest {
+  border-top: var(--border-line);
+}
+
+.cargo-manifest-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-10);
+}
+
+.cargo-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-4);
+}
+
+.cargo-summary {
+  padding: var(--space-6) var(--space-10);
+  border-top: var(--border-line);
+  border-bottom: var(--border-line);
+  background: var(--surface-panel-soft);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.cargo-table-wrap {
+  overflow-x: auto;
+}
+
+.cargo-table {
+  min-width: 1080px;
+}
+
+.cargo-table td {
+  vertical-align: middle;
+}
+
+.cargo-table th,
+.cargo-table td {
+  padding-right: var(--space-5);
+  padding-left: var(--space-5);
+}
+
+.cargo-number-input {
+  width: 116px;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-4);
+}
+
+.cargo-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.cargo-action-button,
+.cargo-remove-button {
+  height: var(--control-height-sm);
+  border: var(--border-line);
+  background: var(--surface-panel-soft);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.cargo-action-button {
+  padding: 0 var(--space-5);
+  border-color: var(--accent);
+  color: var(--text-accent);
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+}
+
+.cargo-remove-button {
+  width: var(--control-height-sm);
+  color: var(--text-loss);
+  font-size: var(--text-lg);
+}
+
+.cargo-action-button:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.cargo-remove-button:hover {
+  border-color: var(--text-loss);
+  background: rgba(232, 92, 92, 0.08);
 }
 
 .selected-route dl {
@@ -720,6 +1348,17 @@ tbody tr:last-child td {
   display: none !important;
 }
 
+@media (max-width: 1300px) {
+  .route-stop-trade-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .route-stop-trade-grid > section {
+    border-right: 0;
+    border-bottom: var(--border-line);
+  }
+}
+
 @media (max-width: 1000px) {
   .mode-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -732,6 +1371,74 @@ tbody tr:last-child td {
   .selected-route dl {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  #routePlannerControls {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'system ship'
+      'start destination'
+      'swap clear';
+  }
+
+  #routePlannerControls .route-clear-button {
+    justify-self: start;
+  }
+
+  .cargo-table,
+  .cargo-table tbody,
+  .cargo-table tr,
+  .cargo-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .cargo-table {
+    min-width: 0;
+  }
+
+  .cargo-table thead {
+    display: none;
+  }
+
+  .cargo-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4) var(--space-8);
+    padding: var(--space-7) var(--space-8);
+    border-bottom: var(--border-line);
+  }
+
+  .cargo-table td {
+    padding: var(--space-2) 0;
+    border-bottom: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .cargo-table td:first-child,
+  .cargo-table td:nth-child(5),
+  .cargo-table td:last-child,
+  .cargo-table td.empty {
+    grid-column: 1 / -1;
+  }
+
+  .cargo-table td:nth-child(n + 2)::before {
+    display: block;
+    margin-bottom: var(--space-2);
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: var(--text-2xs);
+    font-weight: var(--fw-semibold);
+    text-transform: uppercase;
+  }
+
+  .cargo-table td:nth-child(2)::before { content: 'SCU'; }
+  .cargo-table td:nth-child(3)::before { content: 'Einkauf / SCU'; }
+  .cargo-table td:nth-child(4)::before { content: 'Gekauft bei'; }
+  .cargo-table td:nth-child(5)::before { content: 'Abladeort'; }
+  .cargo-table td:nth-child(6)::before { content: 'Verkauf'; }
+  .cargo-table td:nth-child(7)::before { content: 'Gewinn'; }
+  .cargo-table td:nth-child(8)::before { content: 'Marge'; }
+  .cargo-table td:nth-child(9)::before { content: 'Aktion'; }
 }
 
 @media (max-width: 760px) {
@@ -758,6 +1465,8 @@ tbody tr:last-child td {
   }
 
   .selected-route-heading,
+  .route-planner-header,
+  .cargo-manifest-header,
   .statusbar {
     align-items: flex-start;
     flex-direction: column;
@@ -765,6 +1474,41 @@ tbody tr:last-child td {
 
   .selected-route dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #routePlannerControls {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'system'
+      'ship'
+      'start'
+      'swap'
+      'destination'
+      'clear';
+  }
+
+  #routePlannerControls .route-clear-button { justify-self: stretch; }
+
+  .route-itinerary {
+    grid-template-columns: 1fr;
+  }
+
+  .route-stop-trade-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .route-stop-trade-grid > section {
+    border-right: 0;
+    border-bottom: var(--border-line);
+  }
+
+  .route-itinerary article {
+    border-right: 0;
+    border-bottom: var(--border-line);
+  }
+
+  .route-opportunity-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
@@ -785,14 +1529,30 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 
+  .mode-nav-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .mode-nav button {
+    min-width: 0;
+    border-right: var(--border-line);
+  }
+
   .mode-button {
     min-height: 58px;
+  }
+
+  #routePlannerControls {
+    width: calc(100% - 16px);
   }
 
   .hero,
   .control-panel,
   .trading-metrics,
   .selected-route,
+  .route-planner,
   .summary,
   .results-wrap {
     width: min(var(--container-max), calc(100% - 16px));
@@ -801,6 +1561,73 @@ tbody tr:last-child td {
   .selected-route dl {
     grid-template-columns: 1fr;
   }
+
+  .selected-route-actions {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .route-stop-builder {
+    grid-template-columns: 1fr;
+    padding: var(--space-6);
+  }
+
+  .route-ship-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .route-ship-heading small {
+    text-align: left;
+  }
+
+  .route-stop-list {
+    grid-column: auto;
+  }
+
+  .route-stop-item {
+    grid-template-columns: 28px minmax(0, 1fr);
+    padding: var(--space-4) 0;
+  }
+
+  .route-stop-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+
+  .route-opportunity-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+    padding: var(--space-4) 0;
+  }
+
+  .cargo-table tr {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cargo-table td,
+  .cargo-table td:first-child,
+  .cargo-table td:nth-child(5),
+  .cargo-table td:last-child {
+    grid-column: 1;
+  }
+
+  .route-pickup-action {
+    justify-content: flex-start;
+  }
+
+  .route-map-stage,
+  #routeMap {
+    min-height: 0;
+  }
+
+  .route-map-stage {
+    width: 100%;
+    aspect-ratio: 1200 / 620;
+  }
+
+  #routeMap { height: 100%; }
 
   #shoppingResults table,
   #shoppingResults thead,

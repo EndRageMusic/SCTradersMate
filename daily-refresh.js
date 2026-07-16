@@ -2,7 +2,7 @@
   'use strict';
 
   const API_BASE = 'https://api.uexcorp.uk/2.0/';
-  const DB_NAME = 'tradersmate-daily-data';
+  const DB_NAME = 'tradersmate-daily-data-v2';
   const STORE_NAME = 'snapshots';
   const SNAPSHOT_KEY = 'latest';
   const COMPONENT_CATEGORY_IDS = [19, 21, 22, 23];
@@ -79,6 +79,7 @@
     window.TRADERSMATE_SHOPPING_PRICES = payload.shoppingPrices;
     window.TRADERSMATE_COMPONENT_ATTRIBUTES = payload.componentAttributes;
     window.TRADERSMATE_SHIPS = payload.ships;
+    window.TRADERSMATE_FLYABLE_SHIPS = payload.flyableShips || payload.ships;
     window.TRADERSMATE_GROUND_VEHICLES = payload.groundVehicles;
   }
 
@@ -131,6 +132,23 @@
         shops: shopsByVehicle
           .get(vehicle.id)
           .sort((a, b) => a.price - b.price || a.terminal.localeCompare(b.terminal, 'de')),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  }
+
+  function buildFlyableShipData(vehicles) {
+    return vehicles
+      .filter((vehicle) => Number(vehicle.is_spaceship) === 1)
+      .filter((vehicle) => Number(vehicle.is_ground_vehicle) !== 1)
+      .filter((vehicle) => Number(vehicle.is_concept) !== 1)
+      .filter((vehicle) => Number(vehicle.is_addon) !== 1)
+      .filter((vehicle) => Number(vehicle.scu) > 0)
+      .map((vehicle) => ({
+        id: vehicle.id,
+        name: vehicle.name_full || vehicle.name,
+        manufacturer: vehicle.company_name || '',
+        scu: Number(vehicle.scu),
+        crew: vehicle.crew || '',
       }))
       .sort((a, b) => a.name.localeCompare(b.name, 'de'));
   }
@@ -212,6 +230,7 @@
       })),
       componentAttributes,
       ships: buildVehicleData(vehicles, vehiclePrices, terminals, false),
+      flyableShips: buildFlyableShipData(vehicles),
       groundVehicles: buildVehicleData(vehicles, vehiclePrices, terminals, true),
     };
   }
