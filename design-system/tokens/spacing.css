@@ -26,13 +26,13 @@
   --space-48: 96px;
 
   /* Component sizing */
-  --control-height-sm: 32px;
-  --control-height: 40px;   /* source select/input = 2.5rem */
+  --control-height-sm: 44px;
+  --control-height: 44px;
   --control-height-lg: 48px;
   --control-pad-x: 12px;
 
   /* Layout */
-  --container-max: 1180px;  /* source .app-shell width */
+  --container-max: 1200px;
   --container-gutter: 16px;
   --panel-pad: 20px;
   --panel-pad-sm: 12px;

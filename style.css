@@ -28,9 +28,14 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--surface-void);
-  color: var(--text-primary);
+  background-color: var(--surface-void);
+  background-image: url('design-system/images/honeycomb-bg.svg');
+  background-repeat: repeat;
+  background-size: 46px 26.56px;
+  background-attachment: fixed;
+  color: var(--text-secondary);
   font-family: var(--font-sans);
+  font-weight: var(--fw-light);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
@@ -52,8 +57,8 @@ button {
 }
 
 ::selection {
-  background: rgba(231, 126, 35, 0.35);
-  color: var(--text-primary);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 * {
@@ -101,7 +106,6 @@ button {
   display: grid;
   place-items: center;
   border: 2px solid var(--accent);
-  clip-path: var(--clip-chamfer);
   color: var(--accent);
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
@@ -116,9 +120,12 @@ button {
 
 .gate-brand h1 {
   margin: 0;
+  color: var(--text-primary);
   font-family: var(--font-display);
   font-size: clamp(34px, 7vw, 54px);
+  letter-spacing: var(--tracking-wide);
   line-height: 1;
+  text-transform: none;
 }
 
 .gate-brand h1 span,
@@ -134,12 +141,12 @@ button {
 
 .mode-actions {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--space-6);
 }
 
 .mode-button {
-  min-height: 88px;
+  min-height: 72px;
   padding: var(--space-8);
   border: var(--border-line);
   background: var(--surface-panel);
@@ -150,15 +157,14 @@ button {
   text-align: left;
   text-transform: uppercase;
   cursor: pointer;
-  clip-path: var(--clip-chamfer);
-  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .mode-button:hover,
 .mode-button.is-active {
   border-color: var(--accent);
-  background: var(--surface-accent-faint);
-  transform: translateY(-2px);
+  background: var(--surface-panel-soft);
+  color: var(--accent);
 }
 
 .gate-foot {
@@ -318,7 +324,7 @@ button {
   gap: var(--space-8);
   padding: var(--space-6) var(--space-12);
   border-bottom: var(--border-line);
-  background: var(--surface-base);
+  background: rgb(20 20 20 / 92%);
 }
 
 .mode-nav-label {
@@ -391,7 +397,8 @@ button {
   margin-top: var(--space-8);
   border: var(--border-line);
   border-left: 4px solid var(--accent);
-  background: var(--surface-panel);
+  position: relative;
+  background: rgb(20 20 20 / 88%);
 }
 
 .mission-detail-header {
@@ -400,15 +407,16 @@ button {
   justify-content: space-between;
   gap: var(--space-8);
   padding: var(--space-10);
-  border-bottom: var(--border-line);
+  border-bottom: 2px solid var(--accent);
 }
 
 .mission-detail-header h2 {
   margin: var(--space-3) 0 0;
-  color: var(--text-primary);
+  color: var(--accent);
   font-family: var(--font-display);
   font-size: var(--text-2xl);
-  letter-spacing: 0;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
 }
 
 .mission-detail-badges,
@@ -420,8 +428,11 @@ button {
 
 .mission-detail-badges span,
 .mission-badges span {
-  padding: 3px var(--space-4);
-  border: var(--border-line);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0;
+  border: 0;
   color: var(--text-muted);
   font-family: var(--font-display);
   font-size: var(--text-3xs);
@@ -430,21 +441,27 @@ button {
   white-space: nowrap;
 }
 
+.mission-detail-badges span::before,
+.mission-badges span::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  background: currentcolor;
+}
+
 .mission-detail-badges .is-legal,
 .mission-badges .is-legal {
-  border-color: var(--status-profit);
   color: var(--text-profit);
 }
 
 .mission-detail-badges .is-illegal,
 .mission-badges .is-illegal {
-  border-color: var(--status-loss);
   color: var(--text-loss);
 }
 
 .mission-detail-badges .is-blueprint,
 .mission-badges .is-blueprint {
-  border-color: var(--accent);
   color: var(--text-accent);
 }
 
@@ -524,7 +541,7 @@ button {
 }
 
 .mission-results tbody tr[data-mission-uuid]:hover {
-  background: var(--surface-accent-faint);
+  background: var(--surface-panel-soft);
 }
 
 .mission-results tbody tr.is-selected {
@@ -562,7 +579,7 @@ button {
   margin-bottom: var(--space-8);
   padding: var(--space-12);
   border: var(--border-line);
-  background: var(--surface-panel);
+  background: linear-gradient(90deg, rgb(20 20 20 / 96%) 0%, rgb(20 20 20 / 58%) 70%, rgb(0 0 0 / 0%) 100%);
 }
 
 .hero::before,
@@ -601,10 +618,13 @@ button {
 
 h1 {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--accent);
   font-family: var(--font-display);
-  font-size: clamp(30px, 5vw, 44px);
-  line-height: 1;
+  font-size: clamp(28px, 4vw, 32px);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-wide);
+  line-height: 1.1;
+  text-transform: uppercase;
 }
 
 .control-panel {
@@ -614,7 +634,34 @@ h1 {
   margin-top: var(--space-8);
   padding: var(--panel-pad);
   border: var(--border-line);
-  background: var(--surface-panel);
+  position: relative;
+  background: rgb(20 20 20 / 88%);
+}
+
+.control-panel::before,
+.mission-detail::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+  pointer-events: none;
+}
+
+.control-panel::after,
+.mission-detail::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  pointer-events: none;
 }
 
 label {
@@ -644,6 +691,25 @@ input {
   background: var(--surface-panel-soft);
   color: var(--text-primary);
   padding: 0 var(--control-pad-x);
+  font-weight: var(--fw-light);
+  transition: border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+
+select {
+  min-height: var(--control-height);
+  appearance: none;
+  padding-right: var(--space-8);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23E77E23' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 8px;
+}
+
+select:focus,
+input:focus {
+  border-color: var(--accent);
+  box-shadow: var(--glow-accent-soft);
+  outline: 0;
 }
 
 input[type='number'],
@@ -671,7 +737,7 @@ input:disabled {
   min-height: 132px;
   padding: var(--space-10);
   border: var(--border-line);
-  background: var(--surface-panel);
+  background: rgb(20 20 20 / 88%);
 }
 
 .metric-card-primary {
@@ -718,7 +784,6 @@ input:disabled {
   border: 1px solid var(--accent);
   border-left-width: 4px;
   background: var(--surface-raised);
-  clip-path: var(--clip-chamfer);
 }
 
 .selected-route-heading {
@@ -1339,7 +1404,7 @@ input:disabled {
   padding: var(--space-6) var(--space-8);
   border: var(--border-line);
   border-left: 4px solid var(--accent);
-  background: var(--surface-panel);
+  background: rgb(20 20 20 / 88%);
   color: var(--text-secondary);
 }
 
@@ -1347,7 +1412,7 @@ input:disabled {
   margin-top: var(--space-8);
   overflow: auto;
   border: var(--border-line);
-  background: var(--surface-panel);
+  background: rgb(20 20 20 / 94%);
 }
 
 table {
@@ -1376,6 +1441,7 @@ th {
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
+  border-bottom: 2px solid var(--accent);
 }
 
 td:nth-child(n + 3):nth-child(-n + 6) {
@@ -1393,7 +1459,7 @@ tbody tr:last-child td {
 }
 
 #tradingResults tbody tr[data-route-index]:hover {
-  background: var(--surface-accent-faint);
+  background: var(--surface-panel-soft);
 }
 
 #tradingResults tbody tr.is-selected {
@@ -1507,7 +1573,7 @@ tbody tr:last-child td {
   margin-top: var(--space-12);
   padding: var(--space-5) var(--space-12);
   border-top: var(--border-line);
-  background: var(--surface-panel);
+  background: rgb(20 20 20 / 96%);
   color: var(--text-faint);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
