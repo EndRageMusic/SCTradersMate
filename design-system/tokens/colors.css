@@ -1,105 +1,85 @@
-/* ============================================================
-   TradersMate — Color System
-   Base palette is lifted verbatim from the source style.css
-   (--bg, --panel, --panel-soft, --line, --text, --muted, --accent,
-   --good, .loss) and extended into full tonal scales via OKLCH-harmonic
-   steps. The system is intentionally MONOCHROME-AMBER: one warm accent
-   over a cool blue-gray hull, with green/red reserved for profit/loss.
-   ============================================================ */
 :root {
-  /* ---------- BASE: Neutrals (cool "hull" blue-gray) ---------- */
-  --sc-neutral-950: #0a0d10; /* deepest void / page base */
-  --sc-neutral-900: #101418; /* source --bg */
-  --sc-neutral-850: #13181e;
-  --sc-neutral-800: #171d23; /* source --panel */
-  --sc-neutral-750: #1b222a;
-  --sc-neutral-700: #1f2730; /* source --panel-soft */
-  --sc-neutral-600: #29323d;
-  --sc-neutral-550: #2f3a45;
-  --sc-neutral-500: #34404a; /* source --line */
-  --sc-neutral-400: #47545f;
-  --sc-neutral-300: #667581;
-  --sc-neutral-200: #98a7b5; /* source --muted */
-  --sc-neutral-100: #c3cdd6;
-  --sc-neutral-050: #e7edf2; /* source --text */
-  --sc-neutral-000: #f5f8fb;
+  color-scheme: dark;
 
-  /* ---------- BASE: Amber (primary accent) ---------- */
+  /* Profit Basetool corporate palette. */
+  --sc-neutral-950: #000000;
+  --sc-neutral-900: #000000;
+  --sc-neutral-850: #0a0a0a;
+  --sc-neutral-800: #141414;
+  --sc-neutral-750: #181818;
+  --sc-neutral-700: #1c1c1c;
+  --sc-neutral-600: #282828;
+  --sc-neutral-550: #343434;
+  --sc-neutral-500: #3f3f3f;
+  --sc-neutral-400: #646464;
+  --sc-neutral-300: #818181;
+  --sc-neutral-200: #9a9a9a;
+  --sc-neutral-100: #d2d2d2;
+  --sc-neutral-050: #ffffff;
+  --sc-neutral-000: #ffffff;
+
   --sc-amber-900: #4f2909;
   --sc-amber-800: #7a3d0c;
-  --sc-amber-700: #b05913;
-  --sc-amber-600: #d16d1c;
-  --sc-amber-500: #e77e23; /* source --accent */
-  --sc-amber-400: #f0913f;
-  --sc-amber-300: #f6ab6a;
-  --sc-amber-200: #fac79b;
-  --sc-amber-100: #fde3ca;
+  --sc-amber-700: #a84d00;
+  --sc-amber-600: #c45c00;
+  --sc-amber-500: #e77e23;
+  --sc-amber-400: #eeb64b;
+  --sc-amber-300: #f2c875;
+  --sc-amber-200: #f6daa2;
+  --sc-amber-100: #faeccf;
 
-  /* ---------- BASE: Signal Green (profit / go) ---------- */
-  --sc-green-700: #35692f;
-  --sc-green-600: #4f9a4c;
-  --sc-green-500: #72c66f; /* source --good */
-  --sc-green-400: #93d690;
-  --sc-green-200: #c3e9c1;
+  --sc-green-700: #176320;
+  --sc-green-600: #239e33;
+  --sc-green-500: #2ebc3d;
+  --sc-green-400: #65cf70;
+  --sc-green-200: #a9e5af;
 
-  /* ---------- BASE: Signal Red (loss / danger) ---------- */
-  --sc-red-700: #99332e;
-  --sc-red-600: #d1534d;
-  --sc-red-500: #f0746e; /* source .loss color */
-  --sc-red-400: #f4938e;
-  --sc-red-200: #f9c4c1;
+  --sc-red-700: #a3000a;
+  --sc-red-600: #d41a25;
+  --sc-red-500: #f2564b;
+  --sc-red-400: #f68179;
+  --sc-red-200: #fac0bc;
 
-  /* ============ SEMANTIC ALIASES ============ */
-
-  /* Surfaces */
   --surface-void: var(--sc-neutral-950);
   --surface-base: var(--sc-neutral-900);
   --surface-panel: var(--sc-neutral-800);
   --surface-panel-soft: var(--sc-neutral-700);
   --surface-raised: var(--sc-neutral-750);
   --surface-inset: var(--sc-neutral-850);
-  --surface-accent-soft: rgba(231, 126, 35, 0.12);
-  --surface-accent-faint: rgba(231, 126, 35, 0.06);
-  --surface-profit-soft: rgba(114, 198, 111, 0.12);
-  --surface-loss-soft: rgba(240, 116, 110, 0.12);
-  --surface-scrim: rgba(6, 9, 12, 0.72);
+  --surface-accent-soft: rgb(231 126 35 / 14%);
+  --surface-accent-faint: rgb(231 126 35 / 7%);
+  --surface-profit-soft: rgb(35 158 51 / 15%);
+  --surface-loss-soft: rgb(163 0 10 / 18%);
+  --surface-scrim: rgb(0 0 0 / 78%);
 
-  /* Borders (the omnipresent 1px hairline) */
   --border-subtle: var(--sc-neutral-600);
-  --border-default: var(--sc-neutral-500); /* source --line */
+  --border-default: var(--sc-neutral-600);
   --border-strong: var(--sc-neutral-400);
   --border-accent: var(--sc-amber-500);
 
-  /* Text */
   --text-primary: var(--sc-neutral-050);
   --text-secondary: var(--sc-neutral-100);
-  --text-muted: var(--sc-neutral-200); /* source --muted */
-  --text-faint: var(--sc-neutral-300);
+  --text-muted: var(--sc-neutral-200);
+  --text-faint: var(--sc-neutral-400);
   --text-accent: var(--sc-amber-500);
-  --text-on-accent: var(--sc-neutral-900);
+  --text-on-accent: var(--sc-neutral-950);
   --text-profit: var(--sc-green-500);
   --text-loss: var(--sc-red-500);
 
-  /* Accent (interactive) */
   --accent: var(--sc-amber-500);
   --accent-hover: var(--sc-amber-400);
   --accent-active: var(--sc-amber-600);
   --accent-muted: var(--sc-amber-700);
-  --on-accent: var(--sc-neutral-900);
+  --on-accent: var(--sc-neutral-950);
 
-  /* Status / semantics */
-  --status-profit: var(--sc-green-500);
-  --status-loss: var(--sc-red-500);
-  --status-success: var(--sc-green-500);
-  --status-danger: var(--sc-red-500);
-  --status-warning: var(--sc-amber-400);
+  --status-profit: #239e33;
+  --status-loss: #a3000a;
+  --status-success: #239e33;
+  --status-danger: #a3000a;
+  --status-warning: #ffd23f;
   --status-neutral: var(--sc-neutral-200);
-
-  /* Risk tiers (Low / Medium / High trade risk) */
-  --risk-low: var(--sc-green-500);
-  --risk-medium: var(--sc-amber-400);
-  --risk-high: var(--sc-red-500);
-
-  /* Focus */
+  --risk-low: #239e33;
+  --risk-medium: #ffd23f;
+  --risk-high: #a3000a;
   --focus-ring: var(--sc-amber-500);
 }
