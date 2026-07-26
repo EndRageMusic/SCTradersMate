@@ -1199,7 +1199,24 @@ function systemOptions() {
 }
 
 function terminalSubsystem(terminal) {
-  return terminal.planet || 'Stationen & Gateways';
+  const locationText = [
+    terminal.name,
+    terminal.terminalName,
+    terminal.fullName,
+    terminal.station,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  if (/\bgateway\b/i.test(locationText)) {
+    return 'Gateways';
+  }
+
+  if (/\b(?:ARC|CRU|HUR|MIC)-L[1-5]\b/i.test(locationText) || !terminal.planet) {
+    return 'Stationen';
+  }
+
+  return terminal.planet || 'Stationen';
 }
 
 function subsystemOptions(system) {
