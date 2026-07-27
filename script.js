@@ -867,117 +867,334 @@ function svgText(x, y, className, value, anchor = 'middle') {
   return `<text x="${x}" y="${y}" class="${className}" text-anchor="${anchor}">${escapeHtml(value)}</text>`;
 }
 
-function systemMapMarkup(start, destination) {
-  const system = start.system || destination.system || 'Unbekannt';
-  const subsystems = [...new Set(
+const SYSTEM_MAP_LAYOUTS = {
+  Stanton: {
+    center: { x: 600, y: 310 },
+    bodies: {
+      Hurston: { x: 710, y: 150, radius: 25, kind: 'rock' },
+      Crusader: { x: 840, y: 350, radius: 34, kind: 'gas' },
+      ArcCorp: { x: 480, y: 470, radius: 24, kind: 'city' },
+      MicroTech: { x: 260, y: 235, radius: 27, kind: 'ice' },
+    },
+    gateways: {
+      Terra: { x: 100, y: 500 },
+      Pyro: { x: 1090, y: 105 },
+      Nyx: { x: 1080, y: 520 },
+    },
+    station: { x: 600, y: 520 },
+  },
+  Pyro: {
+    center: { x: 600, y: 310 },
+    bodies: {
+      'Pyro I': { x: 675, y: 245, radius: 17, kind: 'rock' },
+      Monox: { x: 760, y: 390, radius: 21, kind: 'rock' },
+      Bloom: { x: 535, y: 465, radius: 23, kind: 'ice' },
+      'Pyro IV': { x: 390, y: 370, radius: 28, kind: 'gas' },
+      'Pyro V': { x: 335, y: 185, radius: 31, kind: 'gas' },
+      Terminus: { x: 825, y: 150, radius: 22, kind: 'rock' },
+    },
+    gateways: {
+      Stanton: { x: 100, y: 500 },
+      Nyx: { x: 1090, y: 115 },
+    },
+    station: { x: 600, y: 535 },
+  },
+  Nyx: {
+    center: { x: 600, y: 310 },
+    bodies: {
+      Delamar: { x: 470, y: 390, radius: 27, kind: 'rock' },
+    },
+    gateways: {
+      Stanton: { x: 100, y: 130 },
+      Pyro: { x: 1090, y: 500 },
+    },
+    station: { x: 470, y: 390 },
+  },
+};
+
+const SYSTEM_NETWORK_POSITIONS = {
+  Stanton: { x: 185, y: 335 },
+  Pyro: { x: 600, y: 210 },
+  Nyx: { x: 1015, y: 370 },
+};
+
+function textHash(value) {
+  return [...String(value || '')].reduce((hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0, 7);
+}
+
+function mapLayoutForSystem(system) {
+  if (SYSTEM_MAP_LAYOUTS[system]) {
+    return SYSTEM_MAP_LAYOUTS[system];
+  }
+  const subsystemNames = [...new Set(
     data.terminals
       .filter((terminal) => terminal.system === system)
-      .filter(routeTerminalAvailable)
-      .map(terminalSubsystem),
-  )].sort((a, b) => a.localeCompare(b, 'de'));
-  const center = { x: 600, y: 310 };
-  const radiusX = 390;
-  const radiusY = 210;
-  const positions = new Map();
-  const parts = [
-    '<circle cx="600" cy="310" r="238" class="route-map-system-orbit" />',
-    '<circle cx="600" cy="310" r="160" class="route-map-subsystem-orbit" />',
-    '<circle cx="600" cy="310" r="30" class="route-map-system" />',
-    svgText(600, 318, 'route-map-label', system),
-    svgText(600, 344, 'route-map-caption', 'SYSTEMKARTE'),
-  ];
-
-  subsystems.forEach((subsystem, index) => {
-    const angle = ((Math.PI * 2) / Math.max(subsystems.length, 1)) * index - Math.PI / 2;
-    const point = {
-      x: center.x + Math.cos(angle) * radiusX,
-      y: center.y + Math.sin(angle) * radiusY,
+      .map(terminalSubsystem)
+      .filter((name) => name !== 'Stationen' && name !== 'Gateways'),
+  )];
+  const bodies = {};
+  subsystemNames.forEach((name, index) => {
+    const angle = ((Math.PI * 2) / Math.max(1, subsystemNames.length)) * index - Math.PI / 2;
+    bodies[name] = {
+      x: 600 + Math.cos(angle) * 310,
+      y: 310 + Math.sin(angle) * 190,
+      radius: 22,
+      kind: 'rock',
     };
-    positions.set(subsystem, point);
-    parts.push(`<line x1="600" y1="310" x2="${point.x}" y2="${point.y}" class="route-map-subsystem-orbit" />`);
-    parts.push(`<circle cx="${point.x}" cy="${point.y}" r="12" class="route-map-body" />`);
-    parts.push(svgText(point.x, point.y + 34, 'route-map-caption', subsystem));
   });
+  return {
+    center: { x: 600, y: 310 },
+    bodies,
+    gateways: {},
+    station: { x: 600, y: 510 },
+  };
+}
 
-  const startBase = positions.get(terminalSubsystem(start)) || { x: 300, y: 310 };
-  const destinationBase = positions.get(terminalSubsystem(destination)) || { x: 900, y: 310 };
-  const sameArea = terminalSubsystem(start) === terminalSubsystem(destination);
-  const startPoint = { x: startBase.x - (sameArea ? 70 : 0), y: startBase.y - 48 };
-  const destinationPoint = { x: destinationBase.x + (sameArea ? 70 : 0), y: destinationBase.y + 48 };
-  const curveY = Math.max(70, Math.min(startPoint.y, destinationPoint.y) - 100);
-  const routePath = `M ${startPoint.x} ${startPoint.y} Q 600 ${curveY} ${destinationPoint.x} ${destinationPoint.y}`;
+function terminalMapPoint(terminal, index = 0) {
+  const system = terminal.system || 'Unbekannt';
+  const layout = mapLayoutForSystem(system);
+  const locationText = [
+    terminal.name,
+    terminal.terminalName,
+    terminal.fullName,
+    terminal.station,
+  ].filter(Boolean).join(' ');
+  const gatewayMatch = locationText.match(/\b(Terra|Pyro|Nyx|Stanton)\s+Gateway\b/i);
+  if (gatewayMatch) {
+    const gatewayName = Object.keys(layout.gateways).find((name) => name.toLowerCase() === gatewayMatch[1].toLowerCase());
+    if (gatewayName) {
+      const point = layout.gateways[gatewayName];
+      return { ...point, area: `${gatewayName} Gateway`, kind: 'gateway' };
+    }
+  }
 
-  parts.unshift(`<path d="${routePath}" class="route-map-route-glow" />`);
-  parts.push(`<path d="${routePath}" class="route-map-route" />`);
-  parts.push(`<circle cx="${startPoint.x}" cy="${startPoint.y}" r="15" class="route-map-endpoint start" />`);
-  parts.push(`<circle cx="${destinationPoint.x}" cy="${destinationPoint.y}" r="15" class="route-map-endpoint destination" />`);
-  parts.push(svgText(startPoint.x, startPoint.y - 27, 'route-map-endpoint-label', routePointLabel(start)));
-  parts.push(svgText(destinationPoint.x, destinationPoint.y + 36, 'route-map-endpoint-label', routePointLabel(destination)));
+  if (system === 'Nyx' && /\blevski\b/i.test(locationText) && layout.bodies.Delamar) {
+    return { ...layout.bodies.Delamar, area: 'Delamar / Levski', kind: 'station' };
+  }
+
+  const lagrangeMatch = locationText.match(/\b(ARC|CRU|HUR|MIC)-L([1-5])\b/i);
+  if (lagrangeMatch) {
+    const planetByCode = {
+      ARC: 'ArcCorp',
+      CRU: 'Crusader',
+      HUR: 'Hurston',
+      MIC: 'MicroTech',
+    };
+    const parent = layout.bodies[planetByCode[lagrangeMatch[1].toUpperCase()]];
+    if (parent) {
+      const offsets = [
+        { x: 62, y: -48 },
+        { x: 76, y: 24 },
+        { x: 0, y: 72 },
+        { x: -74, y: 24 },
+        { x: -62, y: -48 },
+      ];
+      const offset = offsets[Number(lagrangeMatch[2]) - 1];
+      return {
+        x: parent.x + offset.x,
+        y: parent.y + offset.y,
+        area: `${lagrangeMatch[1].toUpperCase()}-L${lagrangeMatch[2]}`,
+        kind: 'station',
+      };
+    }
+  }
+
+  const body = layout.bodies[terminal.planet];
+  if (body) {
+    const hash = textHash(`${terminal.id}-${terminalLabel(terminal)}`);
+    const angle = ((hash % 360) / 180) * Math.PI;
+    const distance = body.radius + 28 + (index % 3) * 9;
+    return {
+      x: body.x + Math.cos(angle) * distance,
+      y: body.y + Math.sin(angle) * distance,
+      area: terminal.planet,
+      kind: 'station',
+    };
+  }
+
+  const hash = textHash(`${terminal.id}-${terminalLabel(terminal)}`);
+  const angle = ((hash % 300) / 150) * Math.PI;
+  return {
+    x: layout.station.x + Math.cos(angle) * (38 + (index % 3) * 10),
+    y: layout.station.y + Math.sin(angle) * (28 + (index % 3) * 8),
+    area: terminalSubsystem(terminal),
+    kind: 'station',
+  };
+}
+
+function routePolyline(points) {
+  return points.map((point) => `${point.x},${point.y}`).join(' ');
+}
+
+function routeLegLabels(points) {
+  let sectionNumber = 0;
+  return points.slice(1).map((point, index) => {
+    const previous = points[index];
+    const x = (previous.x + point.x) / 2;
+    const y = (previous.y + point.y) / 2 - 10;
+    const isJump = previous.terminal.system !== point.terminal.system;
+    const label = isJump ? 'QUANTUM JUMP' : `ABSCHNITT ${sectionNumber += 1}`;
+    return svgText(x, y, 'route-map-leg-label', label);
+  }).join('');
+}
+
+function routeStopMarkup(points) {
+  return points.map((point, index) => {
+    const isStart = !point.transit && point.routeIndex === 0;
+    const isDestination = !point.transit && point.routeIndex === point.routeCount - 1;
+    const type = point.transit ? 'transit' : isStart ? 'start' : isDestination ? 'destination' : 'waypoint';
+    const number = point.transit ? 'G' : isStart ? 'S' : String(point.routeIndex);
+    const labelAbove = index % 2 === 0;
+    const labelY = point.y + (labelAbove ? -34 : 48);
+    const areaY = labelY + 18;
+    return [
+      `<circle cx="${point.x}" cy="${point.y}" r="17" class="route-map-endpoint ${type}" />`,
+      svgText(point.x, point.y + 5, 'route-map-stop-number', number),
+      svgText(point.x, labelY, 'route-map-endpoint-label', routePointLabel(point.terminal)),
+      svgText(point.x, areaY, 'route-map-caption', point.area || point.terminal.system || '-'),
+    ].join('');
+  }).join('');
+}
+
+function systemBaseMarkup(system, layout) {
+  const parts = [
+    '<g class="route-map-coordinate-grid">',
+    '<path d="M 0 155 H 1200 M 0 310 H 1200 M 0 465 H 1200 M 300 0 V 620 M 600 0 V 620 M 900 0 V 620" />',
+    '</g>',
+  ];
+  Object.entries(layout.bodies).forEach(([name, body]) => {
+    const orbitRadius = Math.hypot(body.x - layout.center.x, body.y - layout.center.y);
+    parts.push(`<circle cx="${layout.center.x}" cy="${layout.center.y}" r="${orbitRadius}" class="route-map-system-orbit" />`);
+  });
+  parts.push(`<circle cx="${layout.center.x}" cy="${layout.center.y}" r="32" class="route-map-star" />`);
+  parts.push(svgText(layout.center.x, layout.center.y + 58, 'route-map-label', system));
+  Object.entries(layout.bodies).forEach(([name, body]) => {
+    parts.push(`<circle cx="${body.x}" cy="${body.y}" r="${body.radius}" class="route-map-planet ${body.kind}" />`);
+    parts.push(svgText(body.x, body.y + body.radius + 22, 'route-map-body-label', name));
+  });
+  Object.entries(layout.gateways).forEach(([name, point]) => {
+    parts.push(`<path d="M ${point.x - 9} ${point.y} L ${point.x} ${point.y - 9} L ${point.x + 9} ${point.y} L ${point.x} ${point.y + 9} Z" class="route-map-gateway" />`);
+    parts.push(svgText(point.x, point.y + 26, 'route-map-caption', `${name} Gateway`));
+  });
   return parts.join('');
 }
 
-function crossSystemMapMarkup(start, destination) {
-  const systemPositions = new Map([
-    ['Stanton', { x: 190, y: 320 }],
-    ['Pyro', { x: 600, y: 220 }],
-    ['Nyx', { x: 1010, y: 360 }],
-  ]);
-  const fallbackPositions = new Map();
-  [start.system, destination.system].filter(Boolean).forEach((system, index) => {
-    if (!systemPositions.has(system)) {
-      fallbackPositions.set(system, { x: index ? 930 : 270, y: 310 });
+function systemRouteMapMarkup(terminals) {
+  const system = terminals[0].system || 'Unbekannt';
+  const layout = mapLayoutForSystem(system);
+  const points = terminals.map((terminal, index) => ({
+    ...terminalMapPoint(terminal, index),
+    terminal,
+    routeIndex: index,
+    routeCount: terminals.length,
+  }));
+  return [
+    systemBaseMarkup(system, layout),
+    `<polyline points="${routePolyline(points)}" class="route-map-route-glow" />`,
+    `<polyline points="${routePolyline(points)}" class="route-map-route" />`,
+    routeLegLabels(points),
+    routeStopMarkup(points),
+    svgText(1165, 590, 'route-map-scale-label', `${terminals.length - 1} ROUTENABSCHNITTE`, 'end'),
+  ].join('');
+}
+
+function crossSystemRouteMapMarkup(terminals) {
+  const systems = [...new Set([
+    ...Object.keys(SYSTEM_NETWORK_POSITIONS),
+    ...terminals.map((terminal) => terminal.system).filter(Boolean),
+  ])];
+  const fallbackPositions = {};
+  systems.filter((system) => !SYSTEM_NETWORK_POSITIONS[system]).forEach((system, index) => {
+    fallbackPositions[system] = { x: 250 + index * 300, y: 500 };
+  });
+  const systemPoint = (system) => SYSTEM_NETWORK_POSITIONS[system] || fallbackPositions[system];
+  const positionsBySystem = new Map();
+  const explicitPoints = terminals.map((terminal, index) => {
+    const center = systemPoint(terminal.system);
+    const used = positionsBySystem.get(terminal.system) || 0;
+    positionsBySystem.set(terminal.system, used + 1);
+    const angle = -Math.PI / 2 + used * (Math.PI / 3);
+    return {
+      terminal,
+      x: center.x + Math.cos(angle) * 72,
+      y: center.y + Math.sin(angle) * 72,
+      area: terminalSubsystem(terminal),
+      kind: /gateway/i.test(terminalLabel(terminal)) ? 'gateway' : 'station',
+      routeIndex: index,
+      routeCount: terminals.length,
+    };
+  });
+  const points = [];
+  explicitPoints.forEach((point, index) => {
+    points.push(point);
+    const next = explicitPoints[index + 1];
+    if (!next || point.terminal.system === next.terminal.system) {
+      return;
+    }
+    const sourceCenter = systemPoint(point.terminal.system);
+    const targetCenter = systemPoint(next.terminal.system);
+    const deltaX = targetCenter.x - sourceCenter.x;
+    const deltaY = targetCenter.y - sourceCenter.y;
+    const distance = Math.max(1, Math.hypot(deltaX, deltaY));
+    const direction = { x: deltaX / distance, y: deltaY / distance };
+    const sourceGateway = {
+      system: point.terminal.system,
+      name: `${next.terminal.system} Gateway`,
+      terminalName: `${next.terminal.system} Gateway`,
+    };
+    const targetGateway = {
+      system: next.terminal.system,
+      name: `${point.terminal.system} Gateway`,
+      terminalName: `${point.terminal.system} Gateway`,
+    };
+    if (!terminalLabel(point.terminal).toLowerCase().includes(`${next.terminal.system} gateway`.toLowerCase())) {
+      points.push({
+        terminal: sourceGateway,
+        x: sourceCenter.x + direction.x * 92,
+        y: sourceCenter.y + direction.y * 92,
+        area: `${point.terminal.system} / Ausgang`,
+        transit: true,
+        routeCount: terminals.length,
+      });
+    }
+    if (!terminalLabel(next.terminal).toLowerCase().includes(`${point.terminal.system} gateway`.toLowerCase())) {
+      points.push({
+        terminal: targetGateway,
+        x: targetCenter.x - direction.x * 92,
+        y: targetCenter.y - direction.y * 92,
+        area: `${next.terminal.system} / Eingang`,
+        transit: true,
+        routeCount: terminals.length,
+      });
     }
   });
-  const pointFor = (system) => systemPositions.get(system) || fallbackPositions.get(system);
-  const startPoint = pointFor(start.system);
-  const destinationPoint = pointFor(destination.system);
-  const routePath = `M ${startPoint.x} ${startPoint.y} Q 600 80 ${destinationPoint.x} ${destinationPoint.y}`;
   const parts = [
-    `<path d="${routePath}" class="route-map-route-glow" />`,
-    `<path d="${routePath}" class="route-map-route" />`,
+    '<g class="route-map-coordinate-grid"><path d="M 0 155 H 1200 M 0 310 H 1200 M 0 465 H 1200 M 300 0 V 620 M 600 0 V 620 M 900 0 V 620" /></g>',
   ];
-
-  systemPositions.forEach((point, system) => {
-    parts.push(`<circle cx="${point.x}" cy="${point.y}" r="82" class="route-map-system-orbit" />`);
-    parts.push(`<circle cx="${point.x}" cy="${point.y}" r="28" class="route-map-system" />`);
-    parts.push(svgText(point.x, point.y + 6, 'route-map-label', system));
+  const visibleSystemPoints = systems.map((system) => ({ system, ...systemPoint(system) })).filter((point) => point.x);
+  for (let index = 1; index < visibleSystemPoints.length; index += 1) {
+    const previous = visibleSystemPoints[index - 1];
+    const current = visibleSystemPoints[index];
+    parts.push(`<line x1="${previous.x}" y1="${previous.y}" x2="${current.x}" y2="${current.y}" class="route-map-jump-link" />`);
+  }
+  visibleSystemPoints.forEach((point) => {
+    parts.push(`<circle cx="${point.x}" cy="${point.y}" r="94" class="route-map-system-orbit" />`);
+    parts.push(`<circle cx="${point.x}" cy="${point.y}" r="29" class="route-map-star" />`);
+    parts.push(svgText(point.x, point.y + 126, 'route-map-label', point.system));
   });
-
-  parts.push(`<circle cx="${startPoint.x}" cy="${startPoint.y - 58}" r="14" class="route-map-endpoint start" />`);
-  parts.push(`<circle cx="${destinationPoint.x}" cy="${destinationPoint.y + 58}" r="14" class="route-map-endpoint destination" />`);
-  parts.push(svgText(startPoint.x, startPoint.y - 88, 'route-map-endpoint-label', routePointLabel(start)));
-  parts.push(svgText(destinationPoint.x, destinationPoint.y + 92, 'route-map-endpoint-label', routePointLabel(destination)));
-  parts.push(svgText(600, 560, 'route-map-caption', 'SYSTEMUEBERGREIFENDE ROUTE / SPRUNGPUNKTE SCHEMATISCH'));
+  parts.push(`<polyline points="${routePolyline(points)}" class="route-map-route-glow" />`);
+  parts.push(`<polyline points="${routePolyline(points)}" class="route-map-route" />`);
+  parts.push(routeLegLabels(points));
+  parts.push(routeStopMarkup(points));
+  parts.push(svgText(1165, 590, 'route-map-scale-label', `${terminals.length - 1} ABSCHNITTE / ${systems.length} SYSTEME`, 'end'));
   return parts.join('');
 }
 
-function multiStopMapMarkup(terminals) {
-  const left = 110;
-  const right = 1090;
-  const step = terminals.length > 1 ? (right - left) / (terminals.length - 1) : 0;
-  const points = terminals.map((terminal, index) => ({
-    terminal,
-    x: left + step * index,
-    y: index % 2 === 0 ? 245 : 375,
-  }));
-  const routePath = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ');
-  const parts = [
-    `<path d="${routePath}" class="route-map-route-glow" />`,
-    `<path d="${routePath}" class="route-map-route" />`,
-  ];
-
-  points.forEach((point, index) => {
-    const isStart = index === 0;
-    const isDestination = index === points.length - 1;
-    const type = isStart ? 'start' : isDestination ? 'destination' : 'waypoint';
-    const labelY = point.y + (index % 2 === 0 ? -40 : 54);
-    parts.push(`<circle cx="${point.x}" cy="${point.y}" r="18" class="route-map-endpoint ${type}" />`);
-    parts.push(svgText(point.x, point.y + 6, 'route-map-stop-number', isStart ? 'S' : index));
-    parts.push(svgText(point.x, labelY, 'route-map-endpoint-label', routePointLabel(point.terminal)));
-    parts.push(svgText(point.x, labelY + 20, 'route-map-caption', point.terminal.system || '-'));
-  });
-  parts.push(svgText(600, 570, 'route-map-caption', `${terminals.length - 1} STOPPS / REIHENFOLGE SCHEMATISCH`));
-  return parts.join('');
+function spatialRouteMapMarkup(terminals) {
+  const systems = new Set(terminals.map((terminal) => terminal.system).filter(Boolean));
+  return systems.size <= 1
+    ? systemRouteMapMarkup(terminals)
+    : crossSystemRouteMapMarkup(terminals);
 }
 
 function cargoAssignmentsForRoute(terminals) {
@@ -1143,13 +1360,7 @@ function renderRouteMap() {
   routeMapEmpty.textContent = sameEndpoint
     ? 'Start und Ziel muessen verschieden sein.'
     : 'Waehle Start und Ziel, um die Route darzustellen.';
-  routeMap.innerHTML = hasRoute
-    ? routeTerminals.length > 2
-      ? multiStopMapMarkup(routeTerminals)
-      : start.system === destination.system
-        ? systemMapMarkup(start, destination)
-        : crossSystemMapMarkup(start, destination)
-    : '';
+  routeMap.innerHTML = hasRoute ? spatialRouteMapMarkup(routeTerminals) : '';
 
   routeStartLabel.textContent = start ? terminalLabel(start) : '-';
   routeStartArea.textContent = start ? routeAreaLabel(start) : '-';
@@ -1171,7 +1382,7 @@ function renderRouteMap() {
   summary.textContent = sameEndpoint
     ? 'Start und Ziel sind identisch. Waehle eine andere Zielstation.'
     : hasRoute
-    ? `Route mit ${routeTerminals.length - 1} ${routeTerminals.length === 2 ? 'Stopp' : 'Stopps'} von ${terminalLabel(start)} nach ${terminalLabel(destination)} auf der schematischen Karte.`
+    ? `Route mit ${routeTerminals.length - 1} ${routeTerminals.length === 2 ? 'Stopp' : 'Stopps'} von ${terminalLabel(start)} nach ${terminalLabel(destination)} auf der Systemkarte.`
     : 'Waehle Start und Ziel fuer deine Route.';
 }
 
