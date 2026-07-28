@@ -12,6 +12,18 @@ erweiterbar sowie testbar werden.
 Die fachliche Richtigkeit hat Vorrang vor neuen Funktionen. Erst danach folgen
 Komfortfunktionen und eine genauere Reiseplanung.
 
+## Umgesetzt im Testbranch
+
+- Handelsrechnung nach Bestand, Nachfrage, SCU-Menge und Budget
+- Filter fuer vollstaendig gemeldete und handelbare Mengen
+- Kennzeichnung unbekannter Mengen, unverkaufter Fracht und Preisalter
+- Sofortiger App-Start mit Tagesupdate im Hintergrund
+- Manueller Datenabruf und 15-Sekunden-Zeitlimit
+- Rohwerte der UEX-Statusfelder statt fehlerhafter Ja/Nein-Umwandlung
+- JSON- und CSV-Export der Frachtliste
+- Automatisierte Rechentests und GitHub-Actions-Pruefung
+- Erste Auslagerung der Handelslogik in `trade-calculator.js`
+
 ## Bereits vorhanden
 
 - Täglicher Datenabgleich mit UEX Corp API 2.0 und lokalem IndexedDB-Cache

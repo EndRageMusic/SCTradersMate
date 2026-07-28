@@ -1,0 +1,8 @@
+{
+  "name": "sctradersmate",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check script.js && node --check daily-refresh.js && node --check trade-calculator.js"
+  }
+}

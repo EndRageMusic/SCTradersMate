@@ -1,14 +1,15 @@
-const data = window.TRADERSMATE_DATA || { commodities: [], terminals: [], prices: [] };
-const shoppingItems = window.TRADERSMATE_SHOPPING_ITEMS || [];
-const componentAttributes = window.TRADERSMATE_COMPONENT_ATTRIBUTES || {};
-const shoppingPrices = window.TRADERSMATE_SHOPPING_PRICES || [];
-const ships = window.TRADERSMATE_SHIPS || [];
-const flyableShips = window.TRADERSMATE_FLYABLE_SHIPS || ships.filter((ship) => Number(ship.scu) > 0);
-const groundVehicles = window.TRADERSMATE_GROUND_VEHICLES || [];
+let data = window.TRADERSMATE_DATA || { commodities: [], terminals: [], prices: [] };
+let shoppingItems = window.TRADERSMATE_SHOPPING_ITEMS || [];
+let componentAttributes = window.TRADERSMATE_COMPONENT_ATTRIBUTES || {};
+let shoppingPrices = window.TRADERSMATE_SHOPPING_PRICES || [];
+let ships = window.TRADERSMATE_SHIPS || [];
+let flyableShips = window.TRADERSMATE_FLYABLE_SHIPS || ships.filter((ship) => Number(ship.scu) > 0);
+let groundVehicles = window.TRADERSMATE_GROUND_VEHICLES || [];
 
 const modeGate = document.getElementById('modeGate');
 const modeButtons = [...document.querySelectorAll('[data-mode]')];
 const modeReset = document.getElementById('modeReset');
+const refreshDataButton = document.getElementById('refreshDataButton');
 const modeEyebrow = document.getElementById('modeEyebrow');
 const modeTitle = document.getElementById('modeTitle');
 const tradingControls = document.getElementById('tradingControls');
@@ -36,6 +37,8 @@ const subsystemSelect = document.getElementById('subsystemSelect');
 const stationSelect = document.getElementById('stationSelect');
 const materialSelect = document.getElementById('materialSelect');
 const scuMultiplierInput = document.getElementById('scuMultiplierInput');
+const tradeBudgetInput = document.getElementById('tradeBudgetInput');
+const fullAvailabilityOnly = document.getElementById('fullAvailabilityOnly');
 const summary = document.getElementById('summary');
 const resultsBody = document.getElementById('resultsBody');
 const tradingMetrics = document.getElementById('tradingMetrics');
@@ -50,6 +53,7 @@ const purchaseStationMetric = document.getElementById('purchaseStationMetric');
 const selectedRoute = document.getElementById('selectedRoute');
 const selectedRouteDestination = document.getElementById('selectedRouteDestination');
 const selectedRouteSystem = document.getElementById('selectedRouteSystem');
+const selectedRouteAmount = document.getElementById('selectedRouteAmount');
 const selectedRouteBuy = document.getElementById('selectedRouteBuy');
 const selectedRouteSell = document.getElementById('selectedRouteSell');
 const selectedRouteProfit = document.getElementById('selectedRouteProfit');
@@ -80,6 +84,8 @@ const routeDestinationArea = document.getElementById('routeDestinationArea');
 const routeOpportunitiesBody = document.getElementById('routeOpportunitiesBody');
 const clearCargoButton = document.getElementById('clearCargoButton');
 const planCargoRouteButton = document.getElementById('planCargoRouteButton');
+const exportCargoJsonButton = document.getElementById('exportCargoJsonButton');
+const exportCargoCsvButton = document.getElementById('exportCargoCsvButton');
 const cargoSummary = document.getElementById('cargoSummary');
 const cargoBody = document.getElementById('cargoBody');
 let activeMode = '';
@@ -91,26 +97,36 @@ let routeWaypoints = [];
 let plannedStopCargo = new Map();
 let cargoCapacityAlertTimer = null;
 
-const commoditiesById = new Map(data.commodities.map((commodity) => [commodity.id, commodity]));
-const terminalsById = new Map(data.terminals.map((terminal) => [terminal.id, terminal]));
-const shipsById = new Map(flyableShips.map((ship) => [ship.id, ship]));
-const pricesByTerminalMaterial = new Map();
-const shoppingPricesByItem = new Map();
-const routeTerminalIds = new Set(
-  data.prices
-    .filter((price) => Number(price.priceBuy) > 0 || Number(price.priceSell) > 0)
-    .map((price) => price.terminalId),
-);
+let commoditiesById;
+let terminalsById;
+let shipsById;
+let pricesByTerminalMaterial;
+let shoppingPricesByItem;
+let routeTerminalIds;
 
-data.prices.forEach((price) => {
-  pricesByTerminalMaterial.set(`${price.terminalId}:${price.commodityId}`, price);
-});
+function rebuildDataIndexes() {
+  commoditiesById = new Map(data.commodities.map((commodity) => [commodity.id, commodity]));
+  terminalsById = new Map(data.terminals.map((terminal) => [terminal.id, terminal]));
+  shipsById = new Map(flyableShips.map((ship) => [ship.id, ship]));
+  pricesByTerminalMaterial = new Map();
+  shoppingPricesByItem = new Map();
+  routeTerminalIds = new Set(
+    data.prices
+      .filter((price) => Number(price.priceBuy) > 0 || Number(price.priceSell) > 0)
+      .map((price) => price.terminalId),
+  );
 
-shoppingPrices.forEach((price) => {
-  const rows = shoppingPricesByItem.get(price.itemId) || [];
-  rows.push(price);
-  shoppingPricesByItem.set(price.itemId, rows);
-});
+  data.prices.forEach((price) => {
+    pricesByTerminalMaterial.set(`${price.terminalId}:${price.commodityId}`, price);
+  });
+  shoppingPrices.forEach((price) => {
+    const rows = shoppingPricesByItem.get(price.itemId) || [];
+    rows.push(price);
+    shoppingPricesByItem.set(price.itemId, rows);
+  });
+}
+
+rebuildDataIndexes();
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort((a, b) => a.label.localeCompare(b.label, 'de'));
@@ -289,6 +305,11 @@ function getScuMultiplier() {
   return Number.isFinite(value) && value > 0 ? value : 1;
 }
 
+function getTradeBudget() {
+  const value = Number(tradeBudgetInput.value);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
 function allTerminalOptions() {
   const selectedSystem = systemSelect.value;
   const selectedSubsystem = subsystemSelect.value;
@@ -367,7 +388,7 @@ function refreshOptions() {
 }
 
 function renderEmpty(text) {
-  resultsBody.innerHTML = `<tr><td colspan="7" class="empty">${escapeHtml(text)}</td></tr>`;
+  resultsBody.innerHTML = `<tr><td colspan="8" class="empty">${escapeHtml(text)}</td></tr>`;
   summary.textContent = text;
   resetTradingMetrics();
 }
@@ -432,6 +453,7 @@ function selectRoute(index) {
 
   selectedRouteDestination.textContent = terminalLabel(row.terminal);
   selectedRouteSystem.textContent = row.terminal.system || '-';
+  selectedRouteAmount.textContent = `${formatNumber(row.sellableScu)} / ${formatNumber(row.requestedScu)} SCU`;
   selectedRouteBuy.textContent = formatCredits(row.buyPrice);
   selectedRouteSell.textContent = formatCredits(row.sellPrice);
   selectedRouteProfit.textContent = formatSignedCredits(row.profitTotal);
@@ -444,6 +466,7 @@ function selectRoute(index) {
   selectedTradeRoute = {
     startId: currentStartTerminal.id,
     destinationId: row.terminal.id,
+    purchasableScu: row.purchasableScu,
   };
 }
 
@@ -602,6 +625,51 @@ function saveCargoManifest() {
   }
 }
 
+function downloadFile(filename, content, type) {
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(new Blob([content], { type }));
+  link.download = filename;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
+}
+
+function cargoExportRows() {
+  return cargoManifest.map((item) => {
+    const commodity = commoditiesById.get(Number(item.commodityId));
+    const start = terminalsById.get(Number(item.startTerminalId));
+    const destination = cargoBestDestination(item);
+    return {
+      material: commodity ? commodityLabel(commodity) : String(item.commodityId),
+      scu: Number(item.scu) || 0,
+      einkauf_pro_scu: Number(item.unitBuyPrice) || 0,
+      gekauft_bei: start ? terminalLabel(start) : String(item.startTerminalId),
+      bester_abladeort: destination ? terminalLabel(destination.terminal) : '',
+      verkauf_pro_scu: destination ? destination.unitSellPrice : 0,
+      erwarteter_gewinn: destination ? destination.profit : 0,
+    };
+  });
+}
+
+function exportCargoJson() {
+  downloadFile(
+    `tradersmate-fracht-${new Date().toISOString().slice(0, 10)}.json`,
+    JSON.stringify(cargoExportRows(), null, 2),
+    'application/json',
+  );
+}
+
+function exportCargoCsv() {
+  const rows = cargoExportRows();
+  const columns = ['material', 'scu', 'einkauf_pro_scu', 'gekauft_bei', 'bester_abladeort', 'verkauf_pro_scu', 'erwarteter_gewinn'];
+  const quote = (value) => `"${String(value).replaceAll('"', '""')}"`;
+  const csv = [columns.join(';'), ...rows.map((row) => columns.map((column) => quote(row[column])).join(';'))].join('\r\n');
+  downloadFile(
+    `tradersmate-fracht-${new Date().toISOString().slice(0, 10)}.csv`,
+    `\uFEFF${csv}`,
+    'text/csv;charset=utf-8',
+  );
+}
+
 function cargoBestDestination(item) {
   const startTerminalId = Number(item.startTerminalId);
   const commodityId = Number(item.commodityId);
@@ -640,7 +708,10 @@ function addCurrentCargo() {
     return;
   }
 
-  const scu = getScuMultiplier();
+  const scu = Math.max(0, Number(selectedTradeRoute?.purchasableScu) || 0);
+  if (!scu) {
+    return;
+  }
   if (!cargoFitsShip(scu)) {
     return;
   }
@@ -1719,29 +1790,33 @@ function terminalArea(terminal) {
 }
 
 function buildBuyerRows(startPrice, commodityId, startTerminalId) {
-  const scuMultiplier = getScuMultiplier();
+  const requestedScu = getScuMultiplier();
+  const budget = getTradeBudget();
   return data.prices
     .filter((price) => price.commodityId === commodityId)
     .filter((price) => price.terminalId !== startTerminalId)
     .filter((price) => Number(price.priceSell) > 0)
     .map((price) => {
       const terminal = terminalsById.get(price.terminalId);
-      const sellPrice = Number(price.priceSell) * scuMultiplier;
-      const buyPrice = Number(startPrice.priceBuy) * scuMultiplier;
-      const profitTotal = sellPrice - buyPrice;
-      const margin = buyPrice > 0 ? (profitTotal / buyPrice) * 100 : 0;
+      const calculation = window.TRADERSMATE_TRADE_CALCULATOR.calculateTrade({
+        requestedScu,
+        budget,
+        stockScu: startPrice.stock,
+        demandScu: price.scuSell,
+        buyUnitPrice: startPrice.priceBuy,
+        sellUnitPrice: price.priceSell,
+      });
       return {
         terminal,
         price,
-        sellPrice,
-        buyPrice,
-        scuMultiplier,
-        profitTotal,
-        margin,
+        ...calculation,
+        sellPrice: calculation.sellTotal,
+        buyPrice: calculation.buyTotal,
       };
     })
     .filter((row) => row.terminal)
     .filter((row) => !isMiningFacility(row.terminal))
+    .filter((row) => !fullAvailabilityOnly.checked || row.fullyTradable)
     .sort(
       (a, b) =>
         b.profitTotal - a.profitTotal ||
@@ -1760,8 +1835,26 @@ function routeFlags(row, startTerminal) {
   if (row.terminal.hasLoadingDock) {
     flags.push('Loading Dock');
   }
-  if (row.price.scuSell) {
+  if (row.demandKnown) {
     flags.push(`${formatNumber(row.price.scuSell)} SCU Nachfrage`);
+  } else {
+    flags.push('Nachfrage unbekannt');
+  }
+  if (!row.stockKnown) {
+    flags.push('Bestand unbekannt');
+  }
+  if (row.budgetLimited) {
+    flags.push('Budgetlimit');
+  }
+  if (row.unsoldScu > 0) {
+    flags.push(`${formatNumber(row.unsoldScu)} SCU unverkauft`);
+  }
+  if (row.price.modified) {
+    const modified = new Date(Number(row.price.modified) * 1000);
+    if (!Number.isNaN(modified.getTime())) {
+      const ageHours = Math.max(0, Math.floor((Date.now() - modified.getTime()) / 3600000));
+      flags.push(ageHours < 24 ? `Preis ${ageHours} Std. alt` : `Preis ${Math.floor(ageHours / 24)} Tg. alt`);
+    }
   }
   return flags;
 }
@@ -1788,7 +1881,10 @@ function renderRoutes() {
 
   const buyers = buildBuyerRows(startPrice, commodityId, startTerminalId);
   if (!buyers.length) {
-    renderEmpty(`Keine Verkaufsstellen fuer ${commodityLabel(commodity)} gefunden.`);
+    const filterNote = fullAvailabilityOnly.checked
+      ? ' Keine Route hat fuer die gesamte Menge einen gemeldeten Bestand und eine ausreichende Nachfrage.'
+      : '';
+    renderEmpty(`Keine Verkaufsstellen fuer ${commodityLabel(commodity)} gefunden.${filterNote}`);
     return;
   }
 
@@ -1799,7 +1895,7 @@ function renderRoutes() {
   const bestProfit = buyers[0];
   const bestMargin = [...buyers].sort((a, b) => b.margin - a.margin)[0];
   const scuMultiplier = getScuMultiplier();
-  summary.textContent = `${buyers.length} Verkaufsstellen fuer ${formatNumber(scuMultiplier)} SCU ${commodityLabel(commodity)} ab ${terminalLabel(startTerminal)} gefunden, davon ${profitable} profitabel.`;
+  summary.textContent = `${buyers.length} Verkaufsstellen fuer bis zu ${formatNumber(scuMultiplier)} SCU ${commodityLabel(commodity)} ab ${terminalLabel(startTerminal)} gefunden, davon ${profitable} profitabel.`;
   bestProfitMetric.textContent = formatSignedCredits(bestProfit.profitTotal);
   bestProfitMetric.className = bestProfit.profitTotal > 0 ? 'profit' : bestProfit.profitTotal < 0 ? 'loss' : '';
   bestProfitTarget.textContent = `→ ${terminalLabel(bestProfit.terminal)}`;
@@ -1808,8 +1904,8 @@ function renderRoutes() {
   bestMarginMaterial.textContent = commodityLabel(commodity);
   destinationCountMetric.innerHTML = `${buyers.length} <em>Ziele</em>`;
   profitableCountMetric.textContent = `${profitable} profitabel`;
-  purchasePriceMetric.textContent = formatCredits(Number(startPrice.priceBuy) * scuMultiplier);
-  purchaseStationMetric.textContent = `${formatNumber(scuMultiplier)} SCU · ${terminalLabel(startTerminal)}`;
+  purchasePriceMetric.textContent = formatCredits(bestProfit.buyPrice);
+  purchaseStationMetric.textContent = `${formatNumber(bestProfit.purchasableScu)} SCU · ${terminalLabel(startTerminal)}`;
 
   resultsBody.innerHTML = buyers
     .map((row, index) => {
@@ -1825,6 +1921,7 @@ function renderRoutes() {
             ${area ? `<span class="destination-sub">${escapeHtml(area)}</span>` : ''}
           </td>
           <td>${escapeHtml(row.terminal.system || '-')}</td>
+          <td>${formatNumber(row.sellableScu)} / ${formatNumber(row.requestedScu)} SCU</td>
           <td>${formatCredits(row.buyPrice)}</td>
           <td>${formatCredits(row.sellPrice)}</td>
           <td class="${profitClass}">${formatSignedCredits(row.profitTotal)}</td>
@@ -1877,6 +1974,8 @@ subsystemSelect.addEventListener('change', () => {
 });
 materialSelect.addEventListener('change', renderRoutes);
 scuMultiplierInput.addEventListener('input', renderRoutes);
+tradeBudgetInput.addEventListener('input', renderRoutes);
+fullAvailabilityOnly.addEventListener('change', renderRoutes);
 shoppingSearch.addEventListener('input', renderShopping);
 shoppingCategory.addEventListener('change', renderShopping);
 shipSearch.addEventListener('input', renderShips);
@@ -1976,6 +2075,8 @@ clearCargoButton.addEventListener('click', () => {
   saveCargoManifest();
   renderCargoManifest();
 });
+exportCargoJsonButton.addEventListener('click', exportCargoJson);
+exportCargoCsvButton.addEventListener('click', exportCargoCsv);
 cargoBody.addEventListener('change', (event) => {
   const input = event.target.closest('[data-cargo-field]');
   const row = event.target.closest('[data-cargo-id]');
@@ -2046,9 +2147,39 @@ groundVehicleBody.addEventListener('click', (event) => {
   button.remove();
 });
 modeReset.addEventListener('click', showModeGate);
+refreshDataButton.addEventListener('click', () => {
+  refreshDataButton.disabled = true;
+  Promise.resolve(window.TRADERSMATE_REFRESH_NOW?.()).finally(() => {
+    refreshDataButton.disabled = false;
+  });
+});
 
 modeButtons.forEach((button) => {
   button.addEventListener('click', () => showMode(button.dataset.mode));
+});
+
+window.addEventListener('tradersmate:data-updated', () => {
+  data = window.TRADERSMATE_DATA || data;
+  shoppingItems = window.TRADERSMATE_SHOPPING_ITEMS || shoppingItems;
+  componentAttributes = window.TRADERSMATE_COMPONENT_ATTRIBUTES || componentAttributes;
+  shoppingPrices = window.TRADERSMATE_SHOPPING_PRICES || shoppingPrices;
+  ships = window.TRADERSMATE_SHIPS || ships;
+  flyableShips = window.TRADERSMATE_FLYABLE_SHIPS || ships.filter((ship) => Number(ship.scu) > 0);
+  groundVehicles = window.TRADERSMATE_GROUND_VEHICLES || groundVehicles;
+  rebuildDataIndexes();
+  refreshOptions();
+  fillSelect(shoppingCategory, shoppingCategoryOptions(), 'Alle Kategorien');
+  fillSelect(shipManufacturer, shipManufacturerOptions(), 'Alle Hersteller');
+  fillSelect(groundVehicleManufacturer, groundVehicleManufacturerOptions(), 'Alle Hersteller');
+  populateRouteShipOptions();
+  refreshRoutePlannerOptions();
+  renderCargoManifest();
+  populateDatasetStatus();
+  if (activeMode === 'trading') renderRoutes();
+  if (activeMode === 'shopping' || activeMode === 'components') renderShopping();
+  if (activeMode === 'ships') renderShips();
+  if (activeMode === 'groundVehicles') renderGroundVehicles();
+  if (activeMode === 'routePlanner') renderRouteMap();
 });
 
 refreshOptions();

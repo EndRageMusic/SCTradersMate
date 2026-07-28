@@ -2,7 +2,7 @@
   'use strict';
 
   const API_BASE = 'https://api.uexcorp.uk/2.0/';
-  const DB_NAME = 'tradersmate-daily-data-v2';
+  const DB_NAME = 'tradersmate-daily-data-v3';
   const STORE_NAME = 'snapshots';
   const SNAPSHOT_KEY = 'latest';
   const COMPONENT_CATEGORY_IDS = [19, 21, 22, 23];
@@ -61,16 +61,25 @@
     });
   }
 
-  async function fetchData(endpoint) {
-    const response = await fetch(`${API_BASE}${endpoint}`, { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error(`${endpoint}: HTTP ${response.status}`);
+  async function fetchData(endpoint, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        throw new Error(`${endpoint}: HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      if (!Array.isArray(payload.data)) {
+        throw new Error(`${endpoint}: ungueltige Antwort`);
+      }
+      return payload.data;
+    } finally {
+      window.clearTimeout(timeout);
     }
-    const payload = await response.json();
-    if (!Array.isArray(payload.data)) {
-      throw new Error(`${endpoint}: ungueltige Antwort`);
-    }
-    return payload.data;
   }
 
   function applySnapshot(payload) {
@@ -81,6 +90,15 @@
     window.TRADERSMATE_SHIPS = payload.ships;
     window.TRADERSMATE_FLYABLE_SHIPS = payload.flyableShips || payload.ships;
     window.TRADERSMATE_GROUND_VEHICLES = payload.groundVehicles;
+    window.dispatchEvent(new CustomEvent('tradersmate:data-updated'));
+  }
+
+  function nullableNumber(value) {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
   }
 
   function normalizeTerminal(terminal) {
@@ -208,7 +226,9 @@
           isSellable: Boolean(Number(commodity.is_sellable)),
         })),
         terminals: terminals.filter((terminal) => terminal.type === 'commodity').map(normalizeTerminal),
-        prices: commodityPrices.map((price) => ({
+        prices: commodityPrices
+          .filter((price) => Number(price.id_commodity) > 0 && Number(price.id_terminal) > 0)
+          .map((price) => ({
           commodityId: price.id_commodity,
           terminalId: price.id_terminal,
           priceBuy: Number(price.price_buy) || 0,
@@ -216,11 +236,11 @@
           scuBuy: Number(price.scu_buy) || 0,
           scuSell: Number(price.scu_sell) || 0,
           stock: Number(price.scu_sell_stock) || 0,
-          statusBuy: Boolean(Number(price.status_buy)),
-          statusSell: Boolean(Number(price.status_sell)),
+          statusBuy: nullableNumber(price.status_buy),
+          statusSell: nullableNumber(price.status_sell),
           containerSizes: price.container_sizes || '',
           modified: Number(price.date_modified) || 0,
-        })),
+          })),
       },
       shoppingItems: [...shoppingItemsById.values()].sort((a, b) => a.name.localeCompare(b.name, 'de')),
       shoppingPrices: buyableItemPrices.map((price) => ({
@@ -235,7 +255,7 @@
     };
   }
 
-  window.TRADERSMATE_DAILY_REFRESH = (async () => {
+  async function refresh(force = false) {
     let cached = null;
     try {
       cached = await readSnapshot();
@@ -244,7 +264,7 @@
     }
 
     try {
-      if (cached?.day === localDay() && cached.payload) {
+      if (!force && cached?.day === localDay() && cached.payload) {
         applySnapshot(cached.payload);
         setStatus('· HEUTE AKTUELL');
         return;
@@ -268,5 +288,8 @@
       }
       console.warn('TradersMate Tagesupdate fehlgeschlagen:', error);
     }
-  })();
+  }
+
+  window.TRADERSMATE_REFRESH_NOW = () => refresh(true);
+  window.TRADERSMATE_DAILY_REFRESH = refresh(false);
 })();
