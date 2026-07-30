@@ -23,6 +23,10 @@ Komfortfunktionen und eine genauere Reiseplanung.
 - JSON- und CSV-Export der Frachtliste
 - Automatisierte Rechentests und GitHub-Actions-Pruefung
 - Erste Auslagerung der Handelslogik in `trade-calculator.js`
+- Drop-offs mit 0 SCU Nachfrage aus Handel und Routenplanung entfernt
+- Einkaufsbestand auf das korrekte UEX-Feld `scu_buy` umgestellt
+- Handelsupdate von langsameren Shopping- und Fahrzeugabrufen getrennt
+- Wiederholbarer UEX-Fallback-Generator unter `tools/update-trading-data.ps1`
 
 ## Bereits vorhanden
 

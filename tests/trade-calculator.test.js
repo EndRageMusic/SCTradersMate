@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calculateTrade } = require('../trade-calculator');
+const { calculateTrade, isDropoffAvailable } = require('../trade-calculator');
 
 test('calculates a fully tradable load', () => {
   const result = calculateTrade({
@@ -66,10 +66,26 @@ test('applies the available budget before stock and demand', () => {
   assert.equal(result.profitTotal, 225);
 });
 
-test('marks missing zero values as unknown and keeps the requested amount', () => {
+test('treats an explicitly reported zero stock and demand as unavailable', () => {
   const result = calculateTrade({
     requestedScu: 5,
     stockScu: 0,
+    demandScu: 0,
+    buyUnitPrice: 10,
+    sellUnitPrice: 12,
+  });
+
+  assert.equal(result.stockKnown, true);
+  assert.equal(result.demandKnown, true);
+  assert.equal(result.purchasableScu, 0);
+  assert.equal(result.sellableScu, 0);
+  assert.equal(result.fullyTradable, false);
+});
+
+test('keeps missing stock and demand values explicitly unknown', () => {
+  const result = calculateTrade({
+    requestedScu: 5,
+    stockScu: null,
     demandScu: null,
     buyUnitPrice: 10,
     sellUnitPrice: 12,
@@ -79,4 +95,14 @@ test('marks missing zero values as unknown and keeps the requested amount', () =
   assert.equal(result.demandKnown, false);
   assert.equal(result.sellableScu, 5);
   assert.equal(result.fullyTradable, false);
+});
+
+test('rejects priced drop-offs with explicitly zero demand', () => {
+  assert.equal(isDropoffAvailable({ sellUnitPrice: 3600, demandScu: 0 }), false);
+  assert.equal(isDropoffAvailable({ sellUnitPrice: 3500, demandScu: 2737 }), true);
+});
+
+test('allows a priced drop-off when demand was not reported', () => {
+  assert.equal(isDropoffAvailable({ sellUnitPrice: 3500, demandScu: null }), true);
+  assert.equal(isDropoffAvailable({ sellUnitPrice: 0, demandScu: 100 }), false);
 });

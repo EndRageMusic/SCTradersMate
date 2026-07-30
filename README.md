@@ -20,6 +20,12 @@ Frachtliste kann als JSON oder CSV exportiert werden. Beim Oeffnen erscheint
 sofort der lokale Stand; das Tagesupdate laeuft im Hintergrund und kann ueber
 `Aktualisieren` erneut gestartet werden.
 
+Drop-offs werden nur angeboten, wenn das Terminal einen Ankaufspreis und eine
+positive gemeldete Nachfrage besitzt. Eine ausdruecklich gemeldete Nachfrage
+von `0 SCU` gilt nicht als verfuegbarer Abladeort. Der lokale
+Commodity-Fallback kann mit `tools/update-trading-data.ps1` aus UEX erneuert
+werden.
+
 ## Tests
 
 Die Handelsrechnung besitzt automatisierte Tests. GitHub Actions fuehrt bei

@@ -104,6 +104,21 @@ let pricesByTerminalMaterial;
 let shoppingPricesByItem;
 let routeTerminalIds;
 
+function reportedScu(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function isAvailableDropoff(price) {
+  return Boolean(price) && window.TRADERSMATE_TRADE_CALCULATOR.isDropoffAvailable({
+    sellUnitPrice: price.priceSell,
+    demandScu: price.scuSell,
+  });
+}
+
 function rebuildDataIndexes() {
   commoditiesById = new Map(data.commodities.map((commodity) => [commodity.id, commodity]));
   terminalsById = new Map(data.terminals.map((terminal) => [terminal.id, terminal]));
@@ -112,7 +127,7 @@ function rebuildDataIndexes() {
   shoppingPricesByItem = new Map();
   routeTerminalIds = new Set(
     data.prices
-      .filter((price) => Number(price.priceBuy) > 0 || Number(price.priceSell) > 0)
+      .filter((price) => Number(price.priceBuy) > 0 || isAvailableDropoff(price))
       .map((price) => price.terminalId),
   );
 
@@ -357,7 +372,7 @@ function isMiningFacility(terminal) {
   ]
     .filter(Boolean)
     .join(' ');
-  return /mining (facility|area)/i.test(text);
+  return /\bHDMS-|mining (facility|area)/i.test(text);
 }
 
 function refreshOptions() {
@@ -679,22 +694,26 @@ function cargoBestDestination(item) {
   const rows = data.prices
     .filter((price) => price.commodityId === commodityId)
     .filter((price) => price.terminalId !== startTerminalId)
-    .filter((price) => Number(price.priceSell) > 0)
+    .filter(isAvailableDropoff)
     .map((price) => {
-      const reportedDemand = Math.max(0, Number(price.scuSell) || 0);
-      const sellableScu = reportedDemand > 0 ? Math.min(scu, reportedDemand) : scu;
-      const saleTotal = Number(price.priceSell) * sellableScu;
+      const calculation = window.TRADERSMATE_TRADE_CALCULATOR.calculateTrade({
+        requestedScu: scu,
+        stockScu: null,
+        demandScu: price.scuSell,
+        buyUnitPrice: item.unitBuyPrice,
+        sellUnitPrice: price.priceSell,
+      });
       return {
         terminal: terminalsById.get(price.terminalId),
         unitSellPrice: Number(price.priceSell),
-        reportedDemand,
-        sellableScu,
-        saleTotal,
+        reportedDemand: reportedScu(price.scuSell),
+        sellableScu: calculation.sellableScu,
+        saleTotal: calculation.sellTotal,
         purchaseTotal,
-        profit: saleTotal - purchaseTotal,
+        profit: calculation.profitTotal,
       };
     })
-    .filter((row) => row.terminal && !isMiningFacility(row.terminal));
+    .filter((row) => row.terminal && row.sellableScu > 0 && !isMiningFacility(row.terminal));
   const plannedDestination = rows.find((row) => row.terminal.id === Number(item.plannedDestinationId));
   return plannedDestination
     || rows.sort((a, b) => b.profit - a.profit || terminalLabel(a.terminal).localeCompare(terminalLabel(b.terminal), 'de'))[0]
@@ -1275,11 +1294,11 @@ function cargoAssignmentsForRoute(terminals) {
     const purchaseTotal = Math.max(0, Number(item.unitBuyPrice) || 0) * scu;
     const options = terminals.slice(1).map((terminal) => {
       const price = pricesByTerminalMaterial.get(`${terminal.id}:${Number(item.commodityId)}`);
-      if (!price || Number(price.priceSell) <= 0) {
+      if (!isAvailableDropoff(price)) {
         return null;
       }
-      const demand = Math.max(0, Number(price.scuSell) || 0);
-      const sellableScu = demand > 0 ? Math.min(scu, demand) : scu;
+      const demand = reportedScu(price.scuSell);
+      const sellableScu = demand === null ? scu : Math.min(scu, demand);
       const saleTotal = Number(price.priceSell) * sellableScu;
       return { terminal, price, sellableScu, saleTotal, profit: saleTotal - purchaseTotal };
     }).filter(Boolean).sort((a, b) => b.profit - a.profit);
@@ -1312,7 +1331,7 @@ function pickupOpportunitiesAtStop(terminals, stopIndex) {
         .map((laterTerminal) => {
           const sellPrice = pricesByTerminalMaterial.get(`${laterTerminal.id}:${buyPrice.commodityId}`);
           const profitPerScu = sellPrice ? Number(sellPrice.priceSell) - Number(buyPrice.priceBuy) : 0;
-          return sellPrice && Number(sellPrice.priceSell) > 0
+          return isAvailableDropoff(sellPrice)
             ? { terminal: laterTerminal, sellPrice, profitPerScu }
             : null;
         })
@@ -1795,13 +1814,13 @@ function buildBuyerRows(startPrice, commodityId, startTerminalId) {
   return data.prices
     .filter((price) => price.commodityId === commodityId)
     .filter((price) => price.terminalId !== startTerminalId)
-    .filter((price) => Number(price.priceSell) > 0)
+    .filter(isAvailableDropoff)
     .map((price) => {
       const terminal = terminalsById.get(price.terminalId);
       const calculation = window.TRADERSMATE_TRADE_CALCULATOR.calculateTrade({
         requestedScu,
         budget,
-        stockScu: startPrice.stock,
+        stockScu: startPrice.scuBuy,
         demandScu: price.scuSell,
         buyUnitPrice: startPrice.priceBuy,
         sellUnitPrice: price.priceSell,
@@ -1815,6 +1834,7 @@ function buildBuyerRows(startPrice, commodityId, startTerminalId) {
       };
     })
     .filter((row) => row.terminal)
+    .filter((row) => row.sellableScu > 0)
     .filter((row) => !isMiningFacility(row.terminal))
     .filter((row) => !fullAvailabilityOnly.checked || row.fullyTradable)
     .sort(

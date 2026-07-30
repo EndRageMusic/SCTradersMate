@@ -77,6 +77,8 @@
         throw new Error(`${endpoint}: ungueltige Antwort`);
       }
       return payload.data;
+    } catch (error) {
+      throw new Error(`${endpoint}: ${error.name === 'AbortError' ? 'Zeitlimit erreicht' : error.message}`);
     } finally {
       window.clearTimeout(timeout);
     }
@@ -171,11 +173,61 @@
       .sort((a, b) => a.name.localeCompare(b.name, 'de'));
   }
 
-  async function downloadSnapshot() {
-    const endpoints = [
+  async function downloadTradingSnapshot() {
+    const [commodities, commodityPrices, terminals] = await Promise.all([
       'commodities',
       'commodities_prices_all',
       'terminals',
+    ].map((endpoint) => fetchData(endpoint, 30000)));
+
+    return {
+      terminals,
+      trading: {
+        source: 'UEX Corp API 2.0',
+        generatedAt: new Date().toISOString(),
+        commodities: commodities.map((commodity) => ({
+          id: commodity.id,
+          name: commodity.name,
+          code: commodity.code,
+          kind: commodity.kind,
+          isIllegal: Boolean(Number(commodity.is_illegal)),
+          isFuel: Boolean(Number(commodity.is_fuel)),
+          isBuyable: Boolean(Number(commodity.is_buyable)),
+          isSellable: Boolean(Number(commodity.is_sellable)),
+        })),
+        terminals: terminals.filter((terminal) => terminal.type === 'commodity').map(normalizeTerminal),
+        prices: commodityPrices
+          .filter((price) => Number(price.id_commodity) > 0 && Number(price.id_terminal) > 0)
+          .map((price) => ({
+            commodityId: price.id_commodity,
+            terminalId: price.id_terminal,
+            priceBuy: Number(price.price_buy) || 0,
+            priceSell: Number(price.price_sell) || 0,
+            scuBuy: nullableNumber(price.scu_buy),
+            scuSell: nullableNumber(price.scu_sell),
+            stock: nullableNumber(price.scu_sell_stock),
+            statusBuy: nullableNumber(price.status_buy),
+            statusSell: nullableNumber(price.status_sell),
+            containerSizes: price.container_sizes || '',
+            modified: Number(price.date_modified) || 0,
+          })),
+      },
+    };
+  }
+
+  function currentOptionalSnapshot() {
+    return {
+      shoppingItems: window.TRADERSMATE_SHOPPING_ITEMS || [],
+      shoppingPrices: window.TRADERSMATE_SHOPPING_PRICES || [],
+      componentAttributes: window.TRADERSMATE_COMPONENT_ATTRIBUTES || {},
+      ships: window.TRADERSMATE_SHIPS || [],
+      flyableShips: window.TRADERSMATE_FLYABLE_SHIPS || [],
+      groundVehicles: window.TRADERSMATE_GROUND_VEHICLES || [],
+    };
+  }
+
+  async function downloadOptionalSnapshot(terminals) {
+    const endpoints = [
       'categories?type=item',
       'items_prices_all',
       'vehicles',
@@ -183,14 +235,13 @@
       ...COMPONENT_CATEGORY_IDS.map((id) => `items_attributes?id_category=${id}`),
     ];
     const responses = await Promise.all(endpoints.map(fetchData));
-    const [commodities, commodityPrices, terminals, categories, itemPrices, vehicles, vehiclePrices] =
-      responses;
-    const attributeRows = responses.slice(7).flat();
+    const [categories, itemPrices, vehicles, vehiclePrices] = responses;
+    const attributeRows = responses.slice(4).flat();
     const categoryById = new Map(categories.map((category) => [category.id, category]));
     const terminalById = new Map(terminals.map((terminal) => [terminal.id, terminal]));
-
     const buyableItemPrices = itemPrices.filter((price) => Number(price.price_buy) > 0);
     const shoppingItemsById = new Map();
+
     buyableItemPrices.forEach((price) => {
       const category = categoryById.get(price.id_category) || {};
       shoppingItemsById.set(price.id_item, {
@@ -210,38 +261,7 @@
       componentAttributes[row.id_item][row.attribute_name.toLowerCase()] = row.value;
     });
 
-    const generatedAt = new Date().toISOString();
     return {
-      trading: {
-        source: 'UEX Corp API 2.0',
-        generatedAt,
-        commodities: commodities.map((commodity) => ({
-          id: commodity.id,
-          name: commodity.name,
-          code: commodity.code,
-          kind: commodity.kind,
-          isIllegal: Boolean(Number(commodity.is_illegal)),
-          isFuel: Boolean(Number(commodity.is_fuel)),
-          isBuyable: Boolean(Number(commodity.is_buyable)),
-          isSellable: Boolean(Number(commodity.is_sellable)),
-        })),
-        terminals: terminals.filter((terminal) => terminal.type === 'commodity').map(normalizeTerminal),
-        prices: commodityPrices
-          .filter((price) => Number(price.id_commodity) > 0 && Number(price.id_terminal) > 0)
-          .map((price) => ({
-          commodityId: price.id_commodity,
-          terminalId: price.id_terminal,
-          priceBuy: Number(price.price_buy) || 0,
-          priceSell: Number(price.price_sell) || 0,
-          scuBuy: Number(price.scu_buy) || 0,
-          scuSell: Number(price.scu_sell) || 0,
-          stock: Number(price.scu_sell_stock) || 0,
-          statusBuy: nullableNumber(price.status_buy),
-          statusSell: nullableNumber(price.status_sell),
-          containerSizes: price.container_sizes || '',
-          modified: Number(price.date_modified) || 0,
-          })),
-      },
       shoppingItems: [...shoppingItemsById.values()].sort((a, b) => a.name.localeCompare(b.name, 'de')),
       shoppingPrices: buyableItemPrices.map((price) => ({
         itemId: price.id_item,
@@ -271,14 +291,29 @@
       }
 
       setStatus('· AKTUALISIERE');
-      const payload = await downloadSnapshot();
+      const downloaded = await downloadTradingSnapshot();
+      let payload = {
+        trading: downloaded.trading,
+        ...currentOptionalSnapshot(),
+      };
       applySnapshot(payload);
+      setStatus('· LIVE HANDEL');
       try {
         await writeSnapshot({ day: localDay(), payload });
       } catch (error) {
         console.warn('TradersMate Tagesstand konnte nicht gespeichert werden:', error);
       }
-      setStatus('· LIVE AKTUALISIERT');
+
+      try {
+        const optional = await downloadOptionalSnapshot(downloaded.terminals);
+        payload = { trading: downloaded.trading, ...optional };
+        applySnapshot(payload);
+        await writeSnapshot({ day: localDay(), payload });
+        setStatus('· LIVE AKTUALISIERT');
+      } catch (error) {
+        setStatus('· LIVE HANDEL');
+        console.warn('Optionale UEX-Daten konnten nicht aktualisiert werden:', error);
+      }
     } catch (error) {
       if (cached?.payload) {
         applySnapshot(cached.payload);
