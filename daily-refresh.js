@@ -6,6 +6,7 @@
   const STORE_NAME = 'snapshots';
   const SNAPSHOT_KEY = 'latest';
   const COMPONENT_CATEGORY_IDS = [19, 21, 22, 23];
+  const refreshHelpers = window.TRADERSMATE_REFRESH_HELPERS;
 
   function localDay() {
     const now = new Date();
@@ -95,13 +96,7 @@
     window.dispatchEvent(new CustomEvent('tradersmate:data-updated'));
   }
 
-  function nullableNumber(value) {
-    if (value === null || value === undefined || value === '') {
-      return null;
-    }
-    const number = Number(value);
-    return Number.isFinite(number) ? number : null;
-  }
+  const { nullableNumber, normalizeSellDemand, fetchEndpointList, isCompleteDailySnapshot } = refreshHelpers;
 
   function normalizeTerminal(terminal) {
     return {
@@ -174,11 +169,11 @@
   }
 
   async function downloadTradingSnapshot() {
-    const [commodities, commodityPrices, terminals] = await Promise.all([
+    const [commodities, commodityPrices, terminals] = await fetchEndpointList([
       'commodities',
       'commodities_prices_all',
       'terminals',
-    ].map((endpoint) => fetchData(endpoint, 30000)));
+    ], fetchData, 30000);
 
     return {
       terminals,
@@ -204,7 +199,7 @@
             priceBuy: Number(price.price_buy) || 0,
             priceSell: Number(price.price_sell) || 0,
             scuBuy: nullableNumber(price.scu_buy),
-            scuSell: nullableNumber(price.scu_sell),
+            scuSell: normalizeSellDemand(price.scu_sell, price.status_sell),
             stock: nullableNumber(price.scu_sell_stock),
             statusBuy: nullableNumber(price.status_buy),
             statusSell: nullableNumber(price.status_sell),
@@ -234,7 +229,7 @@
       'vehicles_purchases_prices_all',
       ...COMPONENT_CATEGORY_IDS.map((id) => `items_attributes?id_category=${id}`),
     ];
-    const responses = await Promise.all(endpoints.map(fetchData));
+    const responses = await fetchEndpointList(endpoints, fetchData, 15000);
     const [categories, itemPrices, vehicles, vehiclePrices] = responses;
     const attributeRows = responses.slice(4).flat();
     const categoryById = new Map(categories.map((category) => [category.id, category]));
@@ -284,7 +279,7 @@
     }
 
     try {
-      if (!force && cached?.day === localDay() && cached.payload) {
+      if (!force && isCompleteDailySnapshot(cached, localDay())) {
         applySnapshot(cached.payload);
         setStatus('· HEUTE AKTUELL');
         return;
@@ -299,7 +294,7 @@
       applySnapshot(payload);
       setStatus('· LIVE HANDEL');
       try {
-        await writeSnapshot({ day: localDay(), payload });
+        await writeSnapshot({ day: localDay(), payload, complete: false });
       } catch (error) {
         console.warn('TradersMate Tagesstand konnte nicht gespeichert werden:', error);
       }
@@ -308,7 +303,7 @@
         const optional = await downloadOptionalSnapshot(downloaded.terminals);
         payload = { trading: downloaded.trading, ...optional };
         applySnapshot(payload);
-        await writeSnapshot({ day: localDay(), payload });
+        await writeSnapshot({ day: localDay(), payload, complete: true });
         setStatus('· LIVE AKTUALISIERT');
       } catch (error) {
         setStatus('· LIVE HANDEL');

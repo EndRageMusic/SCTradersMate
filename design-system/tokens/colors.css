@@ -60,7 +60,7 @@
   --text-primary: var(--sc-neutral-050);
   --text-secondary: var(--sc-neutral-100);
   --text-muted: var(--sc-neutral-200);
-  --text-faint: var(--sc-neutral-400);
+  --text-faint: var(--sc-neutral-300);
   --text-accent: var(--sc-amber-500);
   --text-on-accent: var(--sc-neutral-950);
   --text-profit: var(--sc-green-500);

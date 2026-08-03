@@ -65,7 +65,11 @@ $payload = [ordered]@{
       priceBuy = [double]$_.price_buy
       priceSell = [double]$_.price_sell
       scuBuy = Get-NullableNumber $_.scu_buy
-      scuSell = Get-NullableNumber $_.scu_sell
+      scuSell = if ((Get-NullableNumber $_.scu_sell) -eq 0 -and (Get-NullableNumber $_.status_sell) -gt 0) {
+        $null
+      } else {
+        Get-NullableNumber $_.scu_sell
+      }
       stock = Get-NullableNumber $_.scu_sell_stock
       statusBuy = Get-NullableNumber $_.status_buy
       statusSell = Get-NullableNumber $_.status_sell

@@ -3,6 +3,6 @@
   "private": true,
   "scripts": {
     "test": "node --test",
-    "check": "node --check script.js && node --check daily-refresh.js && node --check trade-calculator.js"
+    "check": "node --check script.js && node --check daily-refresh.js && node --check refresh-helpers.js && node --check trade-calculator.js && node --check trade-rows.js && node --check route-helpers.js && node --check data.js && node --check shopping-items.js && node --check shopping-prices.js && node --check shopping-component-attributes.js && node --check ships-data.js && node --check ground-vehicles-data.js"
   }
 }

@@ -26,6 +26,8 @@ Die Ergebnisliste zeigt passende Verkaufsstellen. Dabei gilt:
 - **Marge**: Gewinn im Verhältnis zum Einkaufspreis.
 - Grüne Werte sind positiv, rote Werte sind negativ.
 - Hinweise zeigen beispielsweise Auto-Load, Loading Dock oder verfügbare SCU an.
+- **Nachfrage unbekannt** bedeutet, dass UEX einen Ankaufspreis, aber keine belastbare SCU-Menge gemeldet hat.
+- Mit **Nur vollständig handelbar** werden nur Ziele angezeigt, deren gemeldeter Bestand und Nachfrage für die gesamte gewählte Menge reichen.
 
 Klicke eine Ergebniszeile an, um den Datensatz oberhalb der Tabelle als ausgewählte Route anzuzeigen.
 
@@ -57,7 +59,7 @@ Für jeden Stopp werden zwei Bereiche angezeigt:
 - **Abladen** zeigt gespeicherte Fracht, die an diesem Stopp verkauft werden kann, einschließlich Verkaufspreis und Gewinn.
 - **Mitnehmen** zeigt profitable Waren, die an diesem Stopp gekauft und an einem späteren Routenpunkt verkauft werden können.
 
-Bei **Mitnehmen** trägst du die gewünschte SCU-Menge ein und übernimmst sie in die Frachtliste. Überschreitet die gesamte Ladung die Kapazität des ausgewählten Schiffs, zeigt TradersMate eine Warnung und verhindert das Überladen.
+Bei **Mitnehmen** zeigt TradersMate die aus gemeldetem Bestand und Nachfrage ableitbare Höchstmenge. Du trägst die gewünschte SCU-Menge ein und übernimmst sie in die Frachtliste. Überschreitet die gesamte Ladung die Kapazität des ausgewählten Schiffs, zeigt TradersMate eine Warnung und verhindert das Überladen.
 
 ### Gekaufte Waren
 

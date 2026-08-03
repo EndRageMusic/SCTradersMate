@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TradersMate</title>
+  <link rel="stylesheet" href="design-system/tokens/fonts.css">
+  <link rel="stylesheet" href="design-system/tokens/colors.css">
+  <link rel="stylesheet" href="design-system/tokens/typography.css">
+  <link rel="stylesheet" href="design-system/tokens/spacing.css">
+  <link rel="stylesheet" href="design-system/tokens/effects.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -75,28 +80,28 @@
       <label>
         <span>System</span>
         <select id="systemSelect">
-          <option value="">System waehlen</option>
+          <option value="">System wählen</option>
         </select>
       </label>
 
       <label>
         <span>Untersystem</span>
         <select id="subsystemSelect" disabled>
-          <option value="">Erst System waehlen</option>
+          <option value="">Erst System wählen</option>
         </select>
       </label>
 
       <label>
         <span>Startstation</span>
         <select id="stationSelect" disabled>
-          <option value="">Erst Untersystem waehlen</option>
+          <option value="">Erst Untersystem wählen</option>
         </select>
       </label>
 
       <label>
         <span>Material</span>
         <select id="materialSelect">
-          <option value="">Material waehlen</option>
+          <option value="">Material wählen</option>
         </select>
       </label>
 
@@ -241,7 +246,7 @@
       </header>
 
       <div class="route-map-stage">
-        <svg id="routeMap" viewBox="0 0 1200 620" role="img" aria-labelledby="routeMapTitle routeMapDescription"></svg>
+        <svg id="routeMap" viewBox="0 0 1200 620" aria-labelledby="routeMapTitle routeMapDescription"></svg>
         <p class="route-map-empty" id="routeMapEmpty">Wähle Start und Ziel, um die Route darzustellen.</p>
       </div>
 
@@ -339,7 +344,7 @@
     </section>
 
     <section class="summary" id="summary">
-      Waehle eine Startstation und ein Material.
+      Wähle eine Startstation und ein Material.
     </section>
 
     <section class="results-wrap" id="tradingResults">
@@ -358,7 +363,7 @@
         </thead>
         <tbody id="resultsBody">
           <tr>
-            <td colspan="8" class="empty">Noch keine Route gewaehlt.</td>
+            <td colspan="8" class="empty">Noch keine Route gewählt.</td>
           </tr>
         </tbody>
       </table>
@@ -382,6 +387,7 @@
           </tr>
         </tbody>
       </table>
+      <div class="results-more"><button type="button" class="route-map-button is-hidden" id="shoppingLoadMoreButton">Mehr anzeigen</button></div>
     </section>
 
     <section class="results-wrap is-hidden" id="shipResults">
@@ -434,8 +440,11 @@
   <script src="shopping-prices.js"></script>
   <script src="ships-data.js"></script>
   <script src="ground-vehicles-data.js"></script>
+  <script src="refresh-helpers.js"></script>
   <script src="daily-refresh.js"></script>
   <script src="trade-calculator.js"></script>
+  <script src="trade-rows.js"></script>
+  <script src="route-helpers.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

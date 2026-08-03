@@ -19,6 +19,7 @@ const shoppingResults = document.getElementById('shoppingResults');
 const shoppingSearch = document.getElementById('shoppingSearch');
 const shoppingCategory = document.getElementById('shoppingCategory');
 const shoppingBody = document.getElementById('shoppingBody');
+const shoppingLoadMoreButton = document.getElementById('shoppingLoadMoreButton');
 const shipControls = document.getElementById('shipControls');
 const shipResults = document.getElementById('shipResults');
 const shipSearch = document.getElementById('shipSearch');
@@ -96,6 +97,7 @@ let cargoManifest = loadCargoManifest();
 let routeWaypoints = [];
 let plannedStopCargo = new Map();
 let cargoCapacityAlertTimer = null;
+let shoppingVisibleLimit = 200;
 
 let commoditiesById;
 let terminalsById;
@@ -103,6 +105,8 @@ let shipsById;
 let pricesByTerminalMaterial;
 let shoppingPricesByItem;
 let routeTerminalIds;
+const numberFormatter = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
+const terminalLabelCache = new WeakMap();
 
 function reportedScu(value) {
   if (value === null || value === undefined || value === '') {
@@ -139,15 +143,22 @@ function rebuildDataIndexes() {
     rows.push(price);
     shoppingPricesByItem.set(price.itemId, rows);
   });
+  shoppingPricesByItem.forEach((rows) => {
+    rows.sort((a, b) => a.price - b.price || a.terminal.localeCompare(b.terminal, 'de'));
+  });
 }
 
 rebuildDataIndexes();
 
 function uniqueSorted(values) {
-  return [...new Set(values)].sort((a, b) => a.label.localeCompare(b.label, 'de'));
+  return [...new Map(values.map((item) => [String(item.value), item])).values()]
+    .sort((a, b) => a.label.localeCompare(b.label, 'de'));
 }
 
 function terminalLabel(terminal) {
+  if (terminalLabelCache.has(terminal)) {
+    return terminalLabelCache.get(terminal);
+  }
   const rawName = terminal.terminalName || terminal.fullName || terminal.name;
   const system = terminal.system || '';
   const station = terminal.station || terminal.city || terminal.outpost || terminal.planet || '';
@@ -162,20 +173,28 @@ function terminalLabel(terminal) {
       .replace(/^TDD - (Cloudview Center - )?/i, 'TDD - ')
       .replace(/^TDD - (Commons - )?/i, 'TDD - ')
       .replace(/^TDD - /i, '')).replace(/\s*\([^)]*\)\s*$/, '');
-    return location ? `${location} - TDD` : 'TDD';
+    const label = location ? `${location} - TDD` : 'TDD';
+    terminalLabelCache.set(terminal, label);
+    return label;
   }
 
   if (/^Admin /i.test(cleanedName)) {
     const location = (station || cleanedName.replace(/^Admin /i, '')).replace(/\s*\([^)]*\)\s*$/, '');
-    return system ? `${location} - Admin - ${system}` : `${location} - Admin`;
+    const label = system ? `${location} - Admin - ${system}` : `${location} - Admin`;
+    terminalLabelCache.set(terminal, label);
+    return label;
   }
 
   if (/^Platinum Bay/i.test(cleanedName)) {
     const location = (station || cleanedName.replace(/^Platinum Bay\s*-?\s*/i, '')).replace(/\s*\([^)]*\)\s*$/, '');
-    return system ? `${location} - Platinum Bay - ${system}` : `${location} - Platinum Bay`;
+    const label = system ? `${location} - Platinum Bay - ${system}` : `${location} - Platinum Bay`;
+    terminalLabelCache.set(terminal, label);
+    return label;
   }
 
-  return system ? `${cleanedName} - ${system}` : cleanedName;
+  const label = system ? `${cleanedName} - ${system}` : cleanedName;
+  terminalLabelCache.set(terminal, label);
+  return label;
 }
 
 function commodityLabel(commodity) {
@@ -244,6 +263,8 @@ function showMode(mode) {
   modeButtons.forEach((button) => {
     button.classList.toggle('is-active', button.dataset.mode === mode);
   });
+  modeTitle.tabIndex = -1;
+  window.requestAnimationFrame(() => modeTitle.focus({ preventScroll: true }));
 
   if (isTrading) {
     renderRoutes();
@@ -262,6 +283,7 @@ function showMode(mode) {
   } else {
     shoppingSearch.value = '';
     shoppingCategory.value = '';
+    shoppingVisibleLimit = 200;
     fillSelect(shoppingCategory, shoppingCategoryOptions(), 'Alle Kategorien');
     renderShopping();
   }
@@ -271,11 +293,19 @@ function showModeGate() {
   activeMode = '';
   modeGate.classList.remove('is-hidden');
   hideCargoCapacityAlert();
-  summary.textContent = 'Waehle Trading, Routenplaner, Shopping, Komponenten, Schiffe oder Bodenfahrzeuge.';
+  summary.textContent = 'Wähle Trading, Routenplaner, Shopping, Komponenten, Schiffe oder Bodenfahrzeuge.';
 }
 
 function formatNumber(value) {
-  return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(value);
+  return numberFormatter.format(value);
+}
+
+function debounce(callback, delay = 180) {
+  let timeoutId;
+  return (...args) => {
+    window.clearTimeout(timeoutId);
+    timeoutId = window.setTimeout(() => callback(...args), delay);
+  };
 }
 
 function formatCredits(value) {
@@ -321,8 +351,11 @@ function getScuMultiplier() {
 }
 
 function getTradeBudget() {
+  if (!tradeBudgetInput.value.trim()) {
+    return null;
+  }
   const value = Number(tradeBudgetInput.value);
-  return Number.isFinite(value) && value > 0 ? value : null;
+  return Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 function allTerminalOptions() {
@@ -376,12 +409,12 @@ function isMiningFacility(terminal) {
 }
 
 function refreshOptions() {
-  fillSelect(systemSelect, systemOptions(), 'System waehlen');
+  fillSelect(systemSelect, systemOptions(), 'System wählen');
   const selectedSystem = systemSelect.value;
   fillSelect(
     subsystemSelect,
     selectedSystem ? subsystemOptions(selectedSystem) : [],
-    selectedSystem ? 'Untersystem waehlen' : 'Erst System waehlen',
+    selectedSystem ? 'Untersystem wählen' : 'Erst System wählen',
   );
   subsystemSelect.disabled = !selectedSystem;
 
@@ -389,14 +422,14 @@ function refreshOptions() {
   fillSelect(
     stationSelect,
     selectedSystem && selectedSubsystem ? uniqueSorted(allTerminalOptions()) : [],
-    selectedSubsystem ? 'Station waehlen' : 'Erst Untersystem waehlen',
+    selectedSubsystem ? 'Station wählen' : 'Erst Untersystem wählen',
   );
   stationSelect.disabled = !selectedSystem || !selectedSubsystem;
   const stationId = Number(stationSelect.value);
   const materialOptions = stationId ? commodityOptionsForStation(stationId) : [];
   const placeholder = stationId
-    ? 'Material waehlen'
-    : 'Erst Startstation waehlen';
+    ? 'Material wählen'
+    : 'Erst Startstation wählen';
 
   fillSelect(materialSelect, uniqueSorted(materialOptions), placeholder);
   materialSelect.disabled = !stationId || materialOptions.length === 0;
@@ -463,7 +496,11 @@ function selectRoute(index) {
   resultsBody.querySelectorAll('[data-route-index]').forEach((tableRow) => {
     const isSelected = Number(tableRow.dataset.routeIndex) === index;
     tableRow.classList.toggle('is-selected', isSelected);
-    tableRow.setAttribute('aria-selected', String(isSelected));
+    if (isSelected) {
+      tableRow.setAttribute('aria-current', 'true');
+    } else {
+      tableRow.removeAttribute('aria-current');
+    }
   });
 
   selectedRouteDestination.textContent = terminalLabel(row.terminal);
@@ -504,9 +541,9 @@ function refreshRoutePlannerOptions() {
   const system = routeSystemSelect.value;
   fillSelect(routeSystemSelect, systemOptions(), 'Alle Systeme');
   const options = routeTerminalOptions(system);
-  fillSelect(routeStartSelect, options, 'Start waehlen');
-  fillSelect(routeDestinationSelect, options, 'Ziel waehlen');
-  fillSelect(routeWaypointSelect, options, 'Station als Stopp waehlen');
+  fillSelect(routeStartSelect, options, 'Start wählen');
+  fillSelect(routeDestinationSelect, options, 'Ziel wählen');
+  fillSelect(routeWaypointSelect, options, 'Station als Stopp wählen');
   routeWaypoints = routeWaypoints.filter((terminalId) => options.some((option) => Number(option.value) === terminalId));
   renderRouteWaypointList();
 }
@@ -551,7 +588,7 @@ function populateRouteShipOptions() {
       label: `${ship.name} - ${formatNumber(ship.scu)} SCU`,
     }))
     .sort((a, b) => a.label.localeCompare(b.label, 'de'));
-  fillSelect(routeShipSelect, options, 'Schiff waehlen');
+  fillSelect(routeShipSelect, options, 'Schiff wählen');
   try {
     const storedShipId = window.localStorage.getItem('tradersmate-route-ship');
     if (storedShipId && options.some((option) => option.value === storedShipId)) {
@@ -620,8 +657,8 @@ function updateRouteShipCapacity() {
   routeShipCapacity.className = 'route-ship-capacity';
   if (!ship) {
     routeShipCapacity.textContent = loadedScu > 0
-      ? `Kein Schiff gewaehlt · ${formatNumber(loadedScu)} SCU eingetragen`
-      : 'Kapazitaet: - SCU';
+      ? `Kein Schiff gewählt · ${formatNumber(loadedScu)} SCU eingetragen`
+      : 'Kapazität: - SCU';
     return;
   }
   const capacity = Number(ship.scu) || 0;
@@ -676,8 +713,17 @@ function exportCargoJson() {
 function exportCargoCsv() {
   const rows = cargoExportRows();
   const columns = ['material', 'scu', 'einkauf_pro_scu', 'gekauft_bei', 'bester_abladeort', 'verkauf_pro_scu', 'erwarteter_gewinn'];
+  const numericColumns = new Set(['scu', 'einkauf_pro_scu', 'verkauf_pro_scu', 'erwarteter_gewinn']);
   const quote = (value) => `"${String(value).replaceAll('"', '""')}"`;
-  const csv = [columns.join(';'), ...rows.map((row) => columns.map((column) => quote(row[column])).join(';'))].join('\r\n');
+  const csv = [
+    columns.join(';'),
+    ...rows.map((row) => columns.map((column) => {
+      const value = numericColumns.has(column)
+        ? String(row[column]).replace('.', ',')
+        : row[column];
+      return quote(value);
+    }).join(';')),
+  ].join('\r\n');
   downloadFile(
     `tradersmate-fracht-${new Date().toISOString().slice(0, 10)}.csv`,
     `\uFEFF${csv}`,
@@ -685,15 +731,19 @@ function exportCargoCsv() {
   );
 }
 
-function cargoBestDestination(item) {
+function cargoDestinationRows(item, routeTerminals = null) {
   const startTerminalId = Number(item.startTerminalId);
   const commodityId = Number(item.commodityId);
   const scu = Math.max(1, Number(item.scu) || 1);
   const purchaseTotal = Math.max(0, Number(item.unitBuyPrice) || 0) * scu;
+  const eligibleDestinationIds = routeTerminals
+    ? window.TRADERSMATE_ROUTE_HELPERS.destinationIdsAfterOrigin(routeTerminals, startTerminalId)
+    : null;
 
-  const rows = data.prices
+  return data.prices
     .filter((price) => price.commodityId === commodityId)
     .filter((price) => price.terminalId !== startTerminalId)
+    .filter((price) => !eligibleDestinationIds || eligibleDestinationIds.has(Number(price.terminalId)))
     .filter(isAvailableDropoff)
     .map((price) => {
       const calculation = window.TRADERSMATE_TRADE_CALCULATOR.calculateTrade({
@@ -705,6 +755,7 @@ function cargoBestDestination(item) {
       });
       return {
         terminal: terminalsById.get(price.terminalId),
+        price,
         unitSellPrice: Number(price.priceSell),
         reportedDemand: reportedScu(price.scuSell),
         sellableScu: calculation.sellableScu,
@@ -713,11 +764,16 @@ function cargoBestDestination(item) {
         profit: calculation.profitTotal,
       };
     })
-    .filter((row) => row.terminal && row.sellableScu > 0 && !isMiningFacility(row.terminal));
-  const plannedDestination = rows.find((row) => row.terminal.id === Number(item.plannedDestinationId));
-  return plannedDestination
-    || rows.sort((a, b) => b.profit - a.profit || terminalLabel(a.terminal).localeCompare(terminalLabel(b.terminal), 'de'))[0]
-    || null;
+    .filter((row) => row.terminal && row.sellableScu > 0 && !isMiningFacility(row.terminal))
+    .map((row) => ({ ...row, terminalDisplayName: terminalLabel(row.terminal) }))
+    .sort((a, b) => b.profit - a.profit || a.terminalDisplayName.localeCompare(b.terminalDisplayName, 'de'));
+}
+
+function cargoBestDestination(item) {
+  return window.TRADERSMATE_ROUTE_HELPERS.chooseDestination(
+    cargoDestinationRows(item),
+    item.plannedDestinationId,
+  );
 }
 
 function addCurrentCargo() {
@@ -737,6 +793,7 @@ function addCurrentCargo() {
   cargoManifest.push({
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     startTerminalId: currentStartTerminal.id,
+    plannedDestinationId: selectedTradeRoute.destinationId,
     commodityId,
     scu,
     unitBuyPrice: Number(startPrice.priceBuy),
@@ -761,7 +818,7 @@ function renderCargoManifest() {
 
   if (!cargoManifest.length) {
     cargoSummary.textContent = 'Noch keine gekauften Waren gespeichert.';
-    cargoBody.innerHTML = '<tr><td colspan="9" class="empty">Fuege im Trading oder an einem Routenstopp einen gekauften Posten hinzu.</td></tr>';
+    cargoBody.innerHTML = '<tr><td colspan="9" class="empty">Füge im Trading oder an einem Routenstopp einen gekauften Posten hinzu.</td></tr>';
     clearCargoButton.disabled = true;
     planCargoRouteButton.disabled = true;
     return;
@@ -909,7 +966,7 @@ function planAllCargoStops() {
     .map((terminalId) => terminalsById.get(terminalId))
     .filter(Boolean);
   if (!destinations.length) {
-    summary.textContent = 'Fuer die gespeicherte Fracht wurde kein weiterer Abladeort gefunden.';
+    summary.textContent = 'Für die gespeicherte Fracht wurde kein weiterer Abladeort gefunden.';
     return;
   }
 
@@ -1290,19 +1347,8 @@ function spatialRouteMapMarkup(terminals) {
 function cargoAssignmentsForRoute(terminals) {
   const assignments = new Map();
   cargoManifest.forEach((item) => {
-    const scu = Math.max(1, Number(item.scu) || 1);
-    const purchaseTotal = Math.max(0, Number(item.unitBuyPrice) || 0) * scu;
-    const options = terminals.slice(1).map((terminal) => {
-      const price = pricesByTerminalMaterial.get(`${terminal.id}:${Number(item.commodityId)}`);
-      if (!isAvailableDropoff(price)) {
-        return null;
-      }
-      const demand = reportedScu(price.scuSell);
-      const sellableScu = demand === null ? scu : Math.min(scu, demand);
-      const saleTotal = Number(price.priceSell) * sellableScu;
-      return { terminal, price, sellableScu, saleTotal, profit: saleTotal - purchaseTotal };
-    }).filter(Boolean).sort((a, b) => b.profit - a.profit);
-    const best = options.find((option) => option.terminal.id === Number(item.plannedDestinationId)) || options[0];
+    const options = cargoDestinationRows(item, terminals);
+    const best = window.TRADERSMATE_ROUTE_HELPERS.chooseDestination(options, item.plannedDestinationId);
     if (!best) {
       return;
     }
@@ -1326,13 +1372,17 @@ function pickupOpportunitiesAtStop(terminals, stopIndex) {
 
   return data.prices
     .filter((price) => price.terminalId === terminal.id && Number(price.priceBuy) > 0)
+    .filter((price) => reportedScu(price.scuBuy) !== 0)
     .map((buyPrice) => {
       const destination = laterTerminals
         .map((laterTerminal) => {
           const sellPrice = pricesByTerminalMaterial.get(`${laterTerminal.id}:${buyPrice.commodityId}`);
           const profitPerScu = sellPrice ? Number(sellPrice.priceSell) - Number(buyPrice.priceBuy) : 0;
-          return isAvailableDropoff(sellPrice)
-            ? { terminal: laterTerminal, sellPrice, profitPerScu }
+          const knownLimits = [reportedScu(buyPrice.scuBuy), reportedScu(sellPrice?.scuSell)]
+            .filter((value) => value !== null);
+          const availableScu = knownLimits.length ? Math.min(...knownLimits) : null;
+          return isAvailableDropoff(sellPrice) && availableScu !== 0
+            ? { terminal: laterTerminal, sellPrice, profitPerScu, availableScu }
             : null;
         })
         .filter(Boolean)
@@ -1352,13 +1402,17 @@ function pickupOpportunitiesAtStop(terminals, stopIndex) {
 }
 
 function pickupOpportunityMarkup(row, extraClass = '') {
+  const maximum = row.availableScu === null ? '' : ` max="${Math.max(1, Math.floor(row.availableScu))}"`;
+  const availability = row.availableScu === null
+    ? 'Menge unbekannt'
+    : `bis ${formatNumber(row.availableScu)} SCU`;
   return `
     <div class="route-opportunity-row ${extraClass}" data-pickup-row>
       <span><strong>${escapeHtml(commodityLabel(row.commodity))}</strong><small>${formatCredits(row.buyPrice)} / SCU</small></span>
-      <span class="route-opportunity-target">nach ${escapeHtml(terminalLabel(row.terminal))}</span>
+      <span class="route-opportunity-target">nach ${escapeHtml(terminalLabel(row.terminal))}<small>${availability}</small></span>
       <span class="route-opportunity-return"><strong class="profit">${formatSignedCredits(row.profitPerScu)} / SCU</strong><small class="profit">${formatNumber(row.margin)}% Marge</small></span>
       <span class="route-pickup-action">
-        <input data-pickup-scu class="route-pickup-input" type="number" min="1" step="1" value="1" aria-label="SCU-Menge">
+        <input data-pickup-scu class="route-pickup-input" type="number" min="1"${maximum} step="1" value="1" aria-label="SCU-Menge">
         <button type="button" class="cargo-action-button" data-pickup-add data-origin-terminal="${row.originTerminal.id}" data-destination-terminal="${row.terminal.id}" data-commodity="${row.commodity.id}" data-buy-price="${row.buyPrice}">Mitnehmen</button>
       </span>
     </div>
@@ -1368,7 +1422,11 @@ function pickupOpportunityMarkup(row, extraClass = '') {
 function addRoutePickupToCargo(button) {
   const row = button.closest('[data-pickup-row]');
   const scuInput = row ? row.querySelector('[data-pickup-scu]') : null;
-  const scu = Math.max(1, Math.floor(Number(scuInput?.value) || 1));
+  const requestedScu = Math.max(1, Math.floor(Number(scuInput?.value) || 1));
+  const maximumScu = Number(scuInput?.max);
+  const scu = Number.isFinite(maximumScu) && maximumScu > 0
+    ? Math.min(requestedScu, maximumScu)
+    : requestedScu;
   const startTerminalId = Number(button.dataset.originTerminal);
   const plannedDestinationId = Number(button.dataset.destinationTerminal);
   const commodityId = Number(button.dataset.commodity);
@@ -1449,7 +1507,7 @@ function renderRouteMap() {
   renderRouteOpportunities(hasRoute ? routeTerminals : []);
   routeMapEmpty.textContent = sameEndpoint
     ? 'Start und Ziel muessen verschieden sein.'
-    : 'Waehle Start und Ziel, um die Route darzustellen.';
+    : 'Wähle Start und Ziel, um die Route darzustellen.';
   routeMap.innerHTML = hasRoute ? spatialRouteMapMarkup(routeTerminals) : '';
 
   routeStartLabel.textContent = start ? terminalLabel(start) : '-';
@@ -1468,12 +1526,12 @@ function renderRouteMap() {
     : '-';
   routeMapTitle.textContent = hasRoute
     ? `${terminalLabel(start)} nach ${terminalLabel(destination)}`
-    : 'Route auswaehlen';
+    : 'Route auswählen';
   summary.textContent = sameEndpoint
-    ? 'Start und Ziel sind identisch. Waehle eine andere Zielstation.'
+    ? 'Start und Ziel sind identisch. Wähle eine andere Zielstation.'
     : hasRoute
     ? `Route mit ${routeTerminals.length - 1} ${routeTerminals.length === 2 ? 'Stopp' : 'Stopps'} von ${terminalLabel(start)} nach ${terminalLabel(destination)} auf der Systemkarte.`
-    : 'Waehle Start und Ziel fuer deine Route.';
+    : 'Wähle Start und Ziel für deine Route.';
 }
 
 function shoppingCategoryOptions() {
@@ -1636,10 +1694,12 @@ function renderShopping() {
         .includes(query);
     });
   const matches = filteredItems.filter((item) => shoppingPricesByItem.has(item.id));
+  const visibleMatches = matches.slice(0, shoppingVisibleLimit);
   const unavailableMatches = filteredItems.length - matches.length;
 
   const resultName = activeMode === 'components' ? 'Komponenten und Schiffswaffen' : 'Shopping-Items';
-  summary.textContent = `${matches.length} kaufbare ${resultName} angezeigt.`;
+  summary.textContent = `${visibleMatches.length} von ${matches.length} kaufbaren ${resultName} angezeigt.`;
+  shoppingLoadMoreButton.classList.toggle('is-hidden', visibleMatches.length >= matches.length);
   if (!matches.length) {
     const text = unavailableMatches
       ? 'Gefundene Items stehen aktuell nicht zum Verkauf.'
@@ -1649,24 +1709,16 @@ function renderShopping() {
     return;
   }
 
-  shoppingBody.innerHTML = matches
+  shoppingBody.innerHTML = visibleMatches
     .map((item) => {
-      const shops = (shoppingPricesByItem.get(item.id) || [])
-        .sort((a, b) => a.price - b.price || a.terminal.localeCompare(b.terminal, 'de'));
+      const shops = shoppingPricesByItem.get(item.id) || [];
       const shopHtml = shops
         .slice(0, 6)
         .map((shop) => `<span>${escapeHtml(shoppingShopLabel(shop.terminal))} - ${formatCredits(shop.price)}</span>`)
         .join('');
-      const hiddenShopHtml = shops
-        .slice(6)
-        .map(
-          (shop) =>
-            `<span class="extra-shop is-hidden">${escapeHtml(shoppingShopLabel(shop.terminal))} - ${formatCredits(shop.price)}</span>`,
-        )
-        .join('');
       const extra =
         shops.length > 6
-          ? `<button type="button" class="more-shops-button" data-more-shops>+${shops.length - 6} weitere</button>`
+          ? `<button type="button" class="more-shops-button" data-more-shopping-shops="${item.id}">+${shops.length - 6} weitere</button>`
           : '';
 
       return `
@@ -1676,7 +1728,7 @@ function renderShopping() {
           <td>${escapeHtml(shoppingItemCategory(item) || '-')}</td>
           <td>${escapeHtml(componentAttribute(item, 'grade') || '-')}</td>
           <td>${escapeHtml(componentAttribute(item, 'class') || '-')}</td>
-          <td><div class="shop-list">${shopHtml}${hiddenShopHtml}${extra}</div></td>
+          <td><div class="shop-list">${shopHtml}${extra}</div></td>
         </tr>
       `;
     })
@@ -1811,36 +1863,32 @@ function terminalArea(terminal) {
 function buildBuyerRows(startPrice, commodityId, startTerminalId) {
   const requestedScu = getScuMultiplier();
   const budget = getTradeBudget();
-  return data.prices
-    .filter((price) => price.commodityId === commodityId)
-    .filter((price) => price.terminalId !== startTerminalId)
-    .filter(isAvailableDropoff)
-    .map((price) => {
+  return window.TRADERSMATE_TRADE_ROWS.buildTradeRows({
+    prices: data.prices,
+    commodityId,
+    startTerminalId,
+    requestedScu,
+    budget,
+    stockScu: startPrice.scuBuy,
+    buyUnitPrice: startPrice.priceBuy,
+    calculator: window.TRADERSMATE_TRADE_CALCULATOR,
+  })
+    .map((row) => {
+      const { price } = row;
       const terminal = terminalsById.get(price.terminalId);
-      const calculation = window.TRADERSMATE_TRADE_CALCULATOR.calculateTrade({
-        requestedScu,
-        budget,
-        stockScu: startPrice.scuBuy,
-        demandScu: price.scuSell,
-        buyUnitPrice: startPrice.priceBuy,
-        sellUnitPrice: price.priceSell,
-      });
       return {
+        ...row,
         terminal,
-        price,
-        ...calculation,
-        sellPrice: calculation.sellTotal,
-        buyPrice: calculation.buyTotal,
+        terminalDisplayName: terminal ? terminalLabel(terminal) : '',
       };
     })
     .filter((row) => row.terminal)
-    .filter((row) => row.sellableScu > 0)
     .filter((row) => !isMiningFacility(row.terminal))
     .filter((row) => !fullAvailabilityOnly.checked || row.fullyTradable)
     .sort(
       (a, b) =>
         b.profitTotal - a.profitTotal ||
-        terminalLabel(a.terminal).localeCompare(terminalLabel(b.terminal), 'de'),
+        a.terminalDisplayName.localeCompare(b.terminalDisplayName, 'de'),
     );
 }
 
@@ -1885,7 +1933,7 @@ function renderRoutes() {
 
   if (!startTerminalId || !commodityId) {
     renderEmpty(
-      `${data.terminals.length} Terminals und ${data.commodities.length} Waren geladen. Waehle Startstation und Material.`,
+      `${data.terminals.length} Terminals und ${data.commodities.length} Waren geladen. Wähle Startstation und Material.`,
     );
     return;
   }
@@ -1902,9 +1950,14 @@ function renderRoutes() {
   const buyers = buildBuyerRows(startPrice, commodityId, startTerminalId);
   if (!buyers.length) {
     const filterNote = fullAvailabilityOnly.checked
-      ? ' Keine Route hat fuer die gesamte Menge einen gemeldeten Bestand und eine ausreichende Nachfrage.'
+      ? ' Keine Route hat für die gesamte Menge einen gemeldeten Bestand und eine ausreichende Nachfrage.'
       : '';
-    renderEmpty(`Keine Verkaufsstellen fuer ${commodityLabel(commodity)} gefunden.${filterNote}`);
+    renderEmpty(`Keine Verkaufsstellen für ${commodityLabel(commodity)} gefunden.${filterNote}`);
+    return;
+  }
+
+  if (reportedScu(startPrice.scuBuy) === 0) {
+    renderEmpty(`${commodityLabel(commodity)} ist an ${terminalLabel(startTerminal)} gelistet, aber aktuell ohne gemeldeten Bestand.`);
     return;
   }
 
@@ -1915,7 +1968,7 @@ function renderRoutes() {
   const bestProfit = buyers[0];
   const bestMargin = [...buyers].sort((a, b) => b.margin - a.margin)[0];
   const scuMultiplier = getScuMultiplier();
-  summary.textContent = `${buyers.length} Verkaufsstellen fuer bis zu ${formatNumber(scuMultiplier)} SCU ${commodityLabel(commodity)} ab ${terminalLabel(startTerminal)} gefunden, davon ${profitable} profitabel.`;
+  summary.textContent = `${buyers.length} Verkaufsstellen für bis zu ${formatNumber(scuMultiplier)} SCU ${commodityLabel(commodity)} ab ${terminalLabel(startTerminal)} gefunden, davon ${profitable} profitabel.`;
   bestProfitMetric.textContent = formatSignedCredits(bestProfit.profitTotal);
   bestProfitMetric.className = bestProfit.profitTotal > 0 ? 'profit' : bestProfit.profitTotal < 0 ? 'loss' : '';
   bestProfitTarget.textContent = `→ ${terminalLabel(bestProfit.terminal)}`;
@@ -1935,7 +1988,7 @@ function renderRoutes() {
       const flags = routeFlags(row, startTerminal);
 
       return `
-        <tr data-route-index="${index}" tabindex="0" role="button" aria-selected="false">
+        <tr data-route-index="${index}" tabindex="0">
           <td>
             <strong>${escapeHtml(terminalLabel(row.terminal))}</strong>
             ${area ? `<span class="destination-sub">${escapeHtml(area)}</span>` : ''}
@@ -1996,11 +2049,21 @@ materialSelect.addEventListener('change', renderRoutes);
 scuMultiplierInput.addEventListener('input', renderRoutes);
 tradeBudgetInput.addEventListener('input', renderRoutes);
 fullAvailabilityOnly.addEventListener('change', renderRoutes);
-shoppingSearch.addEventListener('input', renderShopping);
-shoppingCategory.addEventListener('change', renderShopping);
-shipSearch.addEventListener('input', renderShips);
+shoppingSearch.addEventListener('input', debounce(() => {
+  shoppingVisibleLimit = 200;
+  renderShopping();
+}));
+shoppingCategory.addEventListener('change', () => {
+  shoppingVisibleLimit = 200;
+  renderShopping();
+});
+shoppingLoadMoreButton.addEventListener('click', () => {
+  shoppingVisibleLimit += 200;
+  renderShopping();
+});
+shipSearch.addEventListener('input', debounce(renderShips));
 shipManufacturer.addEventListener('change', renderShips);
-groundVehicleSearch.addEventListener('input', renderGroundVehicles);
+groundVehicleSearch.addEventListener('input', debounce(renderGroundVehicles));
 groundVehicleManufacturer.addEventListener('change', renderGroundVehicles);
 routeSystemSelect.addEventListener('change', () => {
   routeStartSelect.value = '';
@@ -2137,13 +2200,16 @@ routeOpportunitiesBody.addEventListener('click', (event) => {
   }
 });
 shoppingBody.addEventListener('click', (event) => {
-  const button = event.target.closest('[data-more-shops]');
+  const button = event.target.closest('[data-more-shopping-shops]');
   if (!button) {
     return;
   }
 
-  const shopList = button.closest('.shop-list');
-  shopList.querySelectorAll('.extra-shop').forEach((shop) => shop.classList.remove('is-hidden'));
+  const shops = shoppingPricesByItem.get(Number(button.dataset.moreShoppingShops)) || [];
+  const extraShopHtml = shops.slice(6)
+    .map((shop) => `<span>${escapeHtml(shoppingShopLabel(shop.terminal))} - ${formatCredits(shop.price)}</span>`)
+    .join('');
+  button.insertAdjacentHTML('beforebegin', extraShopHtml);
   button.remove();
 });
 shipBody.addEventListener('click', (event) => {

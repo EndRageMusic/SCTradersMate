@@ -66,6 +66,21 @@ test('applies the available budget before stock and demand', () => {
   assert.equal(result.profitTotal, 225);
 });
 
+test('respects an explicit zero budget', () => {
+  const result = calculateTrade({
+    requestedScu: 20,
+    stockScu: 100,
+    demandScu: 100,
+    budget: 0,
+    buyUnitPrice: 100,
+    sellUnitPrice: 125,
+  });
+
+  assert.equal(result.purchasableScu, 0);
+  assert.equal(result.sellableScu, 0);
+  assert.equal(result.budgetLimited, true);
+});
+
 test('treats an explicitly reported zero stock and demand as unavailable', () => {
   const result = calculateTrade({
     requestedScu: 5,

@@ -22,7 +22,7 @@
     const stockScu = optionalNonNegativeNumber(options.stockScu);
     const demandScu = optionalNonNegativeNumber(options.demandScu);
     const budget = optionalNonNegativeNumber(options.budget);
-    const affordableScu = budget && buyUnitPrice > 0 ? Math.floor(budget / buyUnitPrice) : requestedScu;
+    const affordableScu = budget !== null && buyUnitPrice > 0 ? Math.floor(budget / buyUnitPrice) : requestedScu;
     const budgetLimitedScu = Math.min(requestedScu, affordableScu);
     const purchasableScu = Math.max(
       0,
